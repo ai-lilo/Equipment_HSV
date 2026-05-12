@@ -1,0 +1,117 @@
+import { useState } from 'react'
+import { Search, Plus, EyeOff, Eye, Filter } from 'lucide-react'
+import TreeView from '../components/tree/TreeView'
+import EquipmentForm from '../components/equipment/EquipmentForm'
+import { useInventory } from '../hooks/useInventory'
+import { SPORTS } from '../types'
+import type { User, Equipment } from '../types'
+
+interface Props {
+  user: User
+  filterRoom?: string
+  filterCabinet?: string
+}
+
+export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: initCabinet }: Props) {
+  const { rooms, cabinets, equipment, loading, reload } = useInventory()
+  const [search, setSearch] = useState('')
+  const [filterRoom, setFilterRoom] = useState(initRoom ?? '')
+  const [filterSport, setFilterSport] = useState('')
+  const [hideEmpty, setHideEmpty] = useState(false)
+  const [editItem, setEditItem] = useState<Equipment | null | 'new'>(null)
+
+  const canEdit = user.role === 'MEMBER' || user.role === 'ADMIN'
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="search"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Suche nach Equipment, Raum, Sportart…"
+            className="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <select
+            value={filterRoom}
+            onChange={e => setFilterRoom(e.target.value)}
+            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option value="">Alle Räume</option>
+            {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+          </select>
+
+          <select
+            value={filterSport}
+            onChange={e => setFilterSport(e.target.value)}
+            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            <option value="">Alle Sportarten</option>
+            {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+
+          <button
+            onClick={() => setHideEmpty(h => !h)}
+            title={hideEmpty ? 'Leere Räume anzeigen' : 'Leere Räume ausblenden'}
+            className="p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-green-600 transition-colors"
+          >
+            {hideEmpty ? <Eye size={18} /> : <EyeOff size={18} />}
+          </button>
+
+          {(filterRoom || filterSport || search) && (
+            <button
+              onClick={() => { setFilterRoom(''); setFilterSport(''); setSearch('') }}
+              className="p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-red-600 transition-colors"
+              title="Filter zurücksetzen"
+            >
+              <Filter size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {canEdit && (
+        <button
+          onClick={() => setEditItem('new')}
+          className="mb-4 flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+        >
+          <Plus size={18} />
+          Equipment hinzufügen
+        </button>
+      )}
+
+      {loading ? (
+        <p className="text-center text-gray-400 py-12">Lade Daten…</p>
+      ) : (
+        <TreeView
+          rooms={rooms}
+          cabinets={cabinets}
+          equipment={equipment}
+          user={user}
+          searchQuery={search}
+          filterRoom={filterRoom}
+          filterSport={filterSport}
+          hideEmpty={hideEmpty}
+          onEditEquipment={setEditItem}
+        />
+      )}
+
+      {editItem !== null && (
+        <EquipmentForm
+          item={editItem === 'new' ? null : editItem}
+          rooms={rooms}
+          cabinets={cabinets}
+          user={user}
+          onClose={() => setEditItem(null)}
+          onSaved={() => { setEditItem(null); reload() }}
+          initCabinetId={initCabinet}
+        />
+      )}
+    </div>
+  )
+}
