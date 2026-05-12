@@ -46,7 +46,7 @@ export default function QRModal({ label, url, onClose }: Props) {
         <p className="text-xs text-gray-400 mt-2 break-all">{url}</p>
         <button
           onClick={print}
-          className="mt-4 flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-semibold transition-colors"
+          className="mt-4 flex items-center justify-center gap-2 w-full bg-blue-800 hover:bg-blue-900 text-white py-2.5 rounded-lg font-semibold transition-colors"
         >
           <Printer size={18} /> Drucken
         </button>

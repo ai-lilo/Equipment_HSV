@@ -18,10 +18,10 @@ const roleLabel: Record<string, string> = {
 
 export default function Header({ user, page, onNavigate, onLogout, darkMode, onToggleDark }: Props) {
   return (
-    <header className="bg-green-700 dark:bg-green-900 text-white shadow-md">
+    <header className="bg-blue-50 dark:bg-gray-900 border-b border-blue-200 dark:border-gray-700 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
-        <Dog size={24} className="shrink-0" />
-        <span className="font-bold text-lg tracking-tight hidden sm:block">HSV Pegnitz</span>
+        <Dog size={24} className="shrink-0 text-blue-800 dark:text-blue-400" />
+        <span className="font-bold text-lg tracking-tight text-blue-800 dark:text-white hidden sm:block">HSV Pegnitz</span>
 
         <nav className="flex gap-1 ml-2 flex-1">
           <NavBtn active={page === 'dashboard'} onClick={() => onNavigate('dashboard')}>
@@ -43,19 +43,19 @@ export default function Header({ user, page, onNavigate, onLogout, darkMode, onT
         </nav>
 
         <div className="flex items-center gap-2 ml-auto shrink-0">
-          <span className="text-xs text-green-200 hidden sm:block">
+          <span className="text-xs text-blue-600 dark:text-blue-200 hidden sm:block">
             {user.username} · {roleLabel[user.role]}
           </span>
           <button
             onClick={onToggleDark}
-            className="p-2 rounded-lg hover:bg-green-600 dark:hover:bg-green-800 transition-colors"
-            title={darkMode ? 'Hellmodus' : 'Dunkelmmodus'}
+            className="p-2 rounded-lg text-blue-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-white/10 transition-colors"
+            title={darkMode ? 'Hellmodus' : 'Dunkelmodus'}
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button
             onClick={onLogout}
-            className="p-2 rounded-lg hover:bg-green-600 dark:hover:bg-green-800 transition-colors"
+            className="p-2 rounded-lg text-blue-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-white/10 transition-colors"
             title="Abmelden"
           >
             <LogOut size={18} />
@@ -71,7 +71,9 @@ function NavBtn({ active, onClick, children }: { active: boolean; onClick: () =>
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-        active ? 'bg-white/20' : 'hover:bg-white/10'
+        active
+          ? 'bg-blue-100 text-blue-800 dark:bg-white/20 dark:text-white'
+          : 'text-blue-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-white/10'
       }`}
     >
       {children}

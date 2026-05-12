@@ -20,7 +20,7 @@ export default function Login({ onLogin, error, loading }: Props) {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-green-600 text-white rounded-full p-4 mb-4">
+          <div className="bg-blue-800 text-white rounded-full p-4 mb-4">
             <Dog size={40} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
@@ -40,7 +40,7 @@ export default function Login({ onLogin, error, loading }: Props) {
               onChange={e => setUsername(e.target.value)}
               placeholder="Dein Benutzername"
               autoFocus
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
           </div>
 
@@ -51,7 +51,7 @@ export default function Login({ onLogin, error, loading }: Props) {
           <button
             type="submit"
             disabled={loading || !username.trim()}
-            className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
           >
             <LogIn size={18} />
             {loading ? 'Anmelden…' : 'Anmelden'}

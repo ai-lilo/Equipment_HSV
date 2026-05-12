@@ -63,7 +63,7 @@ export default function EquipmentCard({ item, canEdit, onEdit }: Props) {
         {canEdit && (
           <button
             onClick={() => onEdit(item)}
-            className="p-1.5 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded transition-colors shrink-0"
+            className="p-1.5 text-gray-400 hover:text-blue-700 dark:hover:text-blue-400 rounded transition-colors shrink-0"
             title="Bearbeiten"
           >
             <Pencil size={16} />
