@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Search, Plus, EyeOff, Eye, Filter } from 'lucide-react'
+import { Search, Plus, EyeOff, Eye, Filter, FileDown } from 'lucide-react'
 import TreeView from '../components/tree/TreeView'
 import EquipmentForm from '../components/equipment/EquipmentForm'
+import StatusOverview from '../components/ui/StatusOverview'
 import { useInventory } from '../hooks/useInventory'
+import { exportInventoryPDF } from '../lib/pdf'
 import { SPORTS } from '../types'
 import type { User, Equipment } from '../types'
 
@@ -24,6 +26,15 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
+      {!loading && (
+        <StatusOverview
+          equipment={equipment}
+          rooms={rooms}
+          cabinets={cabinets}
+          onEditEquipment={canEdit ? setEditItem : () => {}}
+        />
+      )}
+
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -32,15 +43,15 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Suche nach Equipment, Raum, Sportart…"
-            className="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <select
             value={filterRoom}
             onChange={e => setFilterRoom(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             <option value="">Alle Räume</option>
             {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -49,7 +60,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
           <select
             value={filterSport}
             onChange={e => setFilterSport(e.target.value)}
-            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             <option value="">Alle Sportarten</option>
             {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -58,7 +69,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
           <button
             onClick={() => setHideEmpty(h => !h)}
             title={hideEmpty ? 'Leere Räume anzeigen' : 'Leere Räume ausblenden'}
-            className="p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-green-600 transition-colors"
+            className="p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-blue-700 transition-colors"
           >
             {hideEmpty ? <Eye size={18} /> : <EyeOff size={18} />}
           </button>
@@ -75,15 +86,27 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
         </div>
       </div>
 
-      {canEdit && (
-        <button
-          onClick={() => setEditItem('new')}
-          className="mb-4 flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-        >
-          <Plus size={18} />
-          Equipment hinzufügen
-        </button>
-      )}
+      <div className="flex items-center gap-3 mb-4">
+        {canEdit && (
+          <button
+            onClick={() => setEditItem('new')}
+            className="flex items-center gap-2 bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            <Plus size={18} />
+            Equipment hinzufügen
+          </button>
+        )}
+        {!loading && (
+          <button
+            onClick={() => exportInventoryPDF(rooms, cabinets, equipment)}
+            className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-2 rounded-lg font-medium transition-colors"
+            title="Inventarliste als PDF exportieren"
+          >
+            <FileDown size={18} />
+            <span className="hidden sm:inline">PDF exportieren</span>
+          </button>
+        )}
+      </div>
 
       {loading ? (
         <p className="text-center text-gray-400 py-12">Lade Daten…</p>

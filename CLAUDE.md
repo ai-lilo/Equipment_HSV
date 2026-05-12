@@ -94,7 +94,15 @@ Beispiele:
 - sport (nullable), description (nullable)
 - status (OK | DEFECT | IN_REPAIR)
 - defectNote (nullable)
+- photo_url (nullable) — öffentliche URL aus Supabase Storage Bucket `equipment-photos`
 - updatedAt (automatisch bei jedem Speichern)
+
+**Supabase-Migration erforderlich:**
+```sql
+ALTER TABLE equipment ADD COLUMN IF NOT EXISTS photo_url text;
+```
+
+**Supabase Storage:** Bucket `equipment-photos` muss angelegt werden (public read, authenticated write).
 
 ### ChangeLog
 - id, equipmentId (FK), userId (FK), field, oldValue, newValue, changedAt

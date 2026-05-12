@@ -80,7 +80,7 @@ function RoomNode({ room, cabinets, equipment, canEdit, hideEmpty, onEditEquipme
         className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
       >
         {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-        <DoorOpen size={18} className="text-green-600 dark:text-green-400" />
+        <DoorOpen size={18} className="text-blue-600 dark:text-blue-400" />
         <span className="font-semibold text-gray-900 dark:text-white">{room.name}</span>
         <span className="ml-auto text-xs text-gray-400">{totalInRoom} Artikel</span>
       </button>

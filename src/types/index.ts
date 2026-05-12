@@ -50,6 +50,7 @@ export interface Equipment {
   description: string | null
   status: EquipmentStatus
   defect_note: string | null
+  photo_url: string | null
   updated_at: string
 }
 

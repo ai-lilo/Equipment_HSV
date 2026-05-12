@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { X, Trash2, Save } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { X, Trash2, Save, Camera, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { sendDefectNotification, sendRepairedNotification } from '../../lib/push'
 import ConfirmDialog from '../ui/ConfirmDialog'
@@ -27,9 +27,13 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
   const [description, setDescription] = useState(item?.description ?? '')
   const [status, setStatus] = useState<EquipmentStatus>(item?.status ?? 'OK')
   const [defectNote, setDefectNote] = useState(item?.defect_note ?? '')
+  const [photoUrl, setPhotoUrl] = useState<string | null>(item?.photo_url ?? null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(item?.photo_url ?? null)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const roomCabinets = cabinets.filter(c => c.room_id === roomId)
 
@@ -44,6 +48,18 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
     })
   }
 
+  async function uploadPhoto(equipmentId: string): Promise<string | null> {
+    if (!photoFile) return photoUrl
+    const ext = photoFile.name.split('.').pop() ?? 'jpg'
+    const path = `${equipmentId}.${ext}`
+    const { error: uploadErr } = await supabase.storage
+      .from('equipment-photos')
+      .upload(path, photoFile, { upsert: true })
+    if (uploadErr) { setError(`Foto-Upload fehlgeschlagen: ${uploadErr.message}`); return null }
+    const { data } = supabase.storage.from('equipment-photos').getPublicUrl(path)
+    return data.publicUrl
+  }
+
   async function handleSave() {
     if (!name.trim()) { setError('Name ist Pflichtfeld'); return }
     if (!roomId) { setError('Raum ist Pflichtfeld'); return }
@@ -53,23 +69,43 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
     setSaving(true)
     setError(null)
 
-    const payload = {
-      name: name.trim(),
-      count: parsedCount,
-      room_id: roomId,
-      cabinet_id: cabinetId || null,
-      sport: sport || null,
-      description: description.trim() || null,
-      status,
-      defect_note: (status !== 'OK' && defectNote.trim()) ? defectNote.trim() : null,
-      updated_at: new Date().toISOString(),
-    }
-
     if (isNew) {
+      const payload = {
+        name: name.trim(),
+        count: parsedCount,
+        room_id: roomId,
+        cabinet_id: cabinetId || null,
+        sport: sport || null,
+        description: description.trim() || null,
+        status,
+        defect_note: (status !== 'OK' && defectNote.trim()) ? defectNote.trim() : null,
+        photo_url: null as string | null,
+        updated_at: new Date().toISOString(),
+      }
       const { data, error: err } = await supabase.from('equipment').insert(payload).select().single()
       if (err || !data) { setError(err?.message ?? 'Fehler beim Speichern'); setSaving(false); return }
+
+      const uploadedUrl = await uploadPhoto(data.id)
+      if (uploadedUrl !== null && uploadedUrl !== photoUrl) {
+        await supabase.from('equipment').update({ photo_url: uploadedUrl }).eq('id', data.id)
+      }
       if (status === 'DEFECT') await sendDefectNotification(name)
     } else {
+      const uploadedUrl = await uploadPhoto(item.id)
+      if (uploadedUrl === null && photoFile) { setSaving(false); return }
+
+      const payload = {
+        name: name.trim(),
+        count: parsedCount,
+        room_id: roomId,
+        cabinet_id: cabinetId || null,
+        sport: sport || null,
+        description: description.trim() || null,
+        status,
+        defect_note: (status !== 'OK' && defectNote.trim()) ? defectNote.trim() : null,
+        photo_url: uploadedUrl,
+        updated_at: new Date().toISOString(),
+      }
       const { error: err } = await supabase.from('equipment').update(payload).eq('id', item.id)
       if (err) { setError(err.message); setSaving(false); return }
 
@@ -94,8 +130,28 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
 
   async function handleDelete() {
     if (!item) return
+    if (item.photo_url) {
+      const path = item.photo_url.split('/').pop()
+      if (path) await supabase.storage.from('equipment-photos').remove([path])
+    }
     await supabase.from('equipment').delete().eq('id', item.id)
     onSaved()
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setPhotoFile(file)
+    const reader = new FileReader()
+    reader.onload = ev => setPhotoPreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  function removePhoto() {
+    setPhotoFile(null)
+    setPhotoPreview(null)
+    setPhotoUrl(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   return (
@@ -172,7 +228,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
                     onClick={() => setStatus(s)}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
                       status === s
-                        ? s === 'OK' ? 'bg-green-600 text-white border-green-600'
+                        ? s === 'OK' ? 'bg-blue-800 text-white border-blue-800'
                           : s === 'DEFECT' ? 'bg-red-600 text-white border-red-600'
                           : 'bg-yellow-500 text-white border-yellow-500'
                         : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -196,6 +252,46 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
               </Field>
             )}
 
+            <Field label="Foto">
+              {photoPreview ? (
+                <div className="relative">
+                  <img
+                    src={photoPreview}
+                    alt="Equipment-Foto"
+                    className="w-full max-h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={removePhoto}
+                    className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                    title="Foto entfernen"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-600 transition-colors"
+                >
+                  <div className="flex gap-3">
+                    <Camera size={22} />
+                    <ImageIcon size={22} />
+                  </div>
+                  <span className="text-sm">Foto auswählen</span>
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </Field>
+
             {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
           </div>
 
@@ -216,7 +312,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white font-semibold transition-colors"
               >
                 <Save size={16} />
                 {saving ? 'Speichern…' : 'Speichern'}
@@ -247,4 +343,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500'
+const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600'

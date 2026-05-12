@@ -18,7 +18,7 @@ const roleLabel: Record<string, string> = {
 
 export default function Header({ user, page, onNavigate, onLogout, darkMode, onToggleDark }: Props) {
   return (
-    <header className="bg-green-700 dark:bg-green-900 text-white shadow-md">
+    <header className="bg-blue-800 dark:bg-blue-950 text-white shadow-md">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
         <Dog size={24} className="shrink-0" />
         <span className="font-bold text-lg tracking-tight hidden sm:block">HSV Pegnitz</span>
@@ -43,19 +43,19 @@ export default function Header({ user, page, onNavigate, onLogout, darkMode, onT
         </nav>
 
         <div className="flex items-center gap-2 ml-auto shrink-0">
-          <span className="text-xs text-green-200 hidden sm:block">
+          <span className="text-xs text-blue-200 hidden sm:block">
             {user.username} · {roleLabel[user.role]}
           </span>
           <button
             onClick={onToggleDark}
-            className="p-2 rounded-lg hover:bg-green-600 dark:hover:bg-green-800 transition-colors"
+            className="p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-900 transition-colors"
             title={darkMode ? 'Hellmodus' : 'Dunkelmmodus'}
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <button
             onClick={onLogout}
-            className="p-2 rounded-lg hover:bg-green-600 dark:hover:bg-green-800 transition-colors"
+            className="p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-900 transition-colors"
             title="Abmelden"
           >
             <LogOut size={18} />
