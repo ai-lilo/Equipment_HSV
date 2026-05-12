@@ -12,19 +12,25 @@ Die Lagerstruktur wird dauerhaft gepflegt und ist für alle einsehbar.
 
 | | |
 |---|---|
-| **Framework** | Next.js (App Router) + TypeScript |
+| **Framework** | Vite + React + TypeScript |
 | **UI** | TailwindCSS |
-| **Datenbank** | SQLite via Prisma ORM |
-| **Deployment** | Vercel (über GitHub verbunden) |
-| **Migrationspfad** | Prisma ermöglicht spätere Migration zu PostgreSQL / Supabase |
+| **Datenbank** | Supabase (PostgreSQL, cloud-hosted) |
+| **Deployment** | GitHub Pages (statisches Frontend) |
+| **Backend-Logik** | Supabase Client-SDK (direkt aus dem Browser) |
+
+**Warum kein Next.js / SQLite:**
+GitHub Pages hostet ausschließlich statische Dateien — kein Node.js-Server, keine API Routes.
+Vite + React erzeugt ein reines Static Build (`dist/`), das direkt auf GitHub Pages läuft.
+Supabase übernimmt Datenbank, Auth und Row-Level-Security vollständig als Cloud-Service.
 
 ---
 
 ## Authentifizierung
 
 - **Kein Passwort** — Benutzername reicht aus (Daten nicht vertraulich, Benutzerkreis bekannt)
-- Admin legt Benutzer manuell an und teilt den Benutzernamen mit
-- Login: Benutzername eingeben → Session-Cookie wird gesetzt
+- Admin legt Benutzer manuell in Supabase an und teilt den Benutzernamen mit
+- Login: Benutzername eingeben → Supabase prüft ob Benutzer existiert → Session via localStorage
+- Rollen werden über Supabase Row-Level-Security (RLS) serverseitig durchgesetzt
 - Es gibt genau **einen Admin**: Sabine (neupert.sabine@outlook.com)
 
 ---
@@ -151,39 +157,43 @@ Beispiele:
 
 ---
 
+## Deployment (GitHub Pages)
+
+1. `vite build` erzeugt `dist/` (statische Dateien)
+2. GitHub Actions deployt `dist/` automatisch auf GitHub Pages bei jedem Push auf `main`
+3. Supabase-Zugangsdaten kommen aus GitHub Secrets (als `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY`)
+4. Push-Nachrichten laufen über einen Supabase Edge Function (serverless, kein eigener Server nötig)
+
+---
+
 ## Projektstruktur (Ziel)
 
 ```
 Equipment_HSV/
-├── app/
-│   ├── (auth)/login/
-│   ├── (dashboard)/
-│   │   ├── page.tsx              # Hauptübersicht (Baumstruktur)
-│   │   ├── equipment/
-│   │   ├── rooms/
-│   │   └── admin/
-│   ├── api/
-│   │   ├── auth/
-│   │   ├── equipment/
-│   │   ├── rooms/
-│   │   ├── cabinets/
-│   │   ├── changelog/
-│   │   ├── export/pdf/
-│   │   └── push/
-│   └── layout.tsx
-├── components/
-│   ├── tree/                     # Baumstruktur-Komponenten
-│   ├── equipment/                # Equipment-Formulare, Karten
-│   ├── ui/                       # Buttons, Dialoge, Badges
-│   └── layout/                   # Navigation, Header
-├── lib/
-│   ├── db/                       # Prisma-Client
-│   ├── auth/                     # Session-Logik
-│   └── push/                     # Web Push (VAPID)
-├── prisma/
-│   └── schema.prisma
+├── src/
+│   ├── pages/
+│   │   ├── Login.tsx
+│   │   ├── Dashboard.tsx         # Hauptübersicht (Baumstruktur)
+│   │   ├── Equipment.tsx
+│   │   ├── Rooms.tsx
+│   │   └── Admin.tsx
+│   ├── components/
+│   │   ├── tree/                 # Baumstruktur-Komponenten
+│   │   ├── equipment/            # Equipment-Formulare, Karten
+│   │   ├── ui/                   # Buttons, Dialoge, Badges
+│   │   └── layout/               # Navigation, Header
+│   ├── lib/
+│   │   ├── supabase.ts           # Supabase-Client
+│   │   ├── auth.ts               # Login-Logik
+│   │   └── push.ts               # Push-Benachrichtigungen
+│   ├── hooks/                    # Custom React Hooks
+│   ├── types/                    # TypeScript-Typen
+│   └── main.tsx
 ├── public/
 │   └── sw.js                     # Service Worker (Push)
+├── .github/
+│   └── workflows/
+│       └── deploy.yml            # GitHub Actions: build + deploy
 ├── CLAUDE.md
 └── README.md
 ```
@@ -195,9 +205,9 @@ Equipment_HSV/
 - Alle UI-Texte auf **Deutsch**
 - Fachbegriffe aus dem Hundesport werden ohne Erklärung verwendet
 - Keine unnötigen Kommentare im Code
-- Prisma für alle Datenbankzugriffe (kein Raw-SQL außer für Performance-Ausnahmen)
-- API-Routes: RESTful, JSON, Fehler mit sinnvollen HTTP-Statuscodes
-- Rollen werden serverseitig geprüft (nie nur client-seitig)
+- Alle Datenbankzugriffe über Supabase Client-SDK (kein direktes SQL im Frontend)
+- Rollen werden über Supabase RLS serverseitig durchgesetzt (nie nur client-seitig)
+- Umgebungsvariablen: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (nie im Code hardcoden)
 
 ---
 
@@ -205,4 +215,3 @@ Equipment_HSV/
 
 - Equipment-Reservierung für Trainingstage
 - Mehrsprachigkeit
-- Supabase / PostgreSQL Migration
