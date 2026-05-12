@@ -27,7 +27,7 @@ export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment
     let y = 14
 
     // Header
-    doc.setFillColor(30, 64, 175) // blue-800
+    doc.setFillColor(21, 128, 61) // green-700
     doc.rect(0, 0, pageW, 22, 'F')
     doc.setFontSize(14)
     doc.setTextColor(255, 255, 255)
@@ -41,7 +41,7 @@ export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment
 
     // Room title
     doc.setFontSize(13)
-    doc.setTextColor(30, 64, 175)
+    doc.setTextColor(21, 128, 61)
     doc.setFont('helvetica', 'bold')
     doc.text(room.name, margin, y)
     y += 2
@@ -102,10 +102,10 @@ function renderTable(
   const rowH = 7
 
   // Table header
-  doc.setFillColor(219, 234, 254) // blue-100
+  doc.setFillColor(220, 252, 231) // green-100
   doc.rect(x, y, width, headerH, 'F')
   doc.setFontSize(8)
-  doc.setTextColor(30, 64, 175)
+  doc.setTextColor(21, 128, 61)
   doc.setFont('helvetica', 'bold')
   doc.text('Name', x + 2, y + 4.2)
   doc.text('Anzahl', x + colName + 2, y + 4.2)

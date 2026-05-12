@@ -84,7 +84,7 @@ export default function Rooms({ user }: Props) {
         {user.role === 'ADMIN' && (
           <button
             onClick={() => setEditRoom('new')}
-            className="flex items-center gap-2 bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
           >
             <Plus size={16} /> Raum hinzufügen
           </button>
@@ -134,7 +134,7 @@ export default function Rooms({ user }: Props) {
                   {user.role === 'ADMIN' && (
                     <button
                       onClick={() => setEditCabinet({ cabinet: null, roomId: room.id })}
-                      className="flex items-center gap-1.5 text-sm text-blue-700 hover:text-blue-900 dark:text-blue-400 py-1 px-2"
+                      className="flex items-center gap-1.5 text-sm text-green-600 hover:text-green-700 dark:text-green-400 py-1 px-2"
                     >
                       <Plus size={14} /> Schrank hinzufügen
                     </button>
@@ -211,7 +211,7 @@ function NameDialog({ title, initial, onSave, onCancel }: {
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && value.trim() && onSave(value.trim())}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
           placeholder="Name"
         />
         <div className="flex gap-3 justify-end">
@@ -221,7 +221,7 @@ function NameDialog({ title, initial, onSave, onCancel }: {
           <button
             onClick={() => value.trim() && onSave(value.trim())}
             disabled={!value.trim()}
-            className="px-4 py-2 rounded-lg bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white font-semibold transition-colors"
+            className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-semibold transition-colors"
           >
             Speichern
           </button>
