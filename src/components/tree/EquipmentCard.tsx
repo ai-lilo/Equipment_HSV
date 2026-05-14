@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Pencil, AlertCircle, Image as ImageIcon, X, ShoppingCart } from 'lucide-react'
 import StatusBadge from '../ui/StatusBadge'
 import type { Equipment, Category } from '../../types'
@@ -7,12 +7,27 @@ interface Props {
   item: Equipment
   canEdit: boolean
   categories: Category[]
+  openShoppingIds: Set<string>
   onEdit: (item: Equipment) => void
-  onAddToShoppingList?: (item: Equipment) => void
+  onAddToShoppingList?: (item: Equipment) => Promise<'added' | 'duplicate'>
 }
 
-export default function EquipmentCard({ item, canEdit, categories, onEdit, onAddToShoppingList }: Props) {
+export default function EquipmentCard({ item, canEdit, categories, openShoppingIds, onEdit, onAddToShoppingList }: Props) {
   const [photoOpen, setPhotoOpen] = useState(false)
+  const [feedback, setFeedback] = useState<'added' | 'duplicate' | null>(null)
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (feedbackTimer.current) clearTimeout(feedbackTimer.current) }, [])
+
+  const isOnList = openShoppingIds.has(item.id)
+
+  async function handleCartClick() {
+    if (!onAddToShoppingList) return
+    const result = await onAddToShoppingList(item)
+    setFeedback(result)
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current)
+    feedbackTimer.current = setTimeout(() => setFeedback(null), 2000)
+  }
 
   return (
     <>
@@ -65,28 +80,35 @@ export default function EquipmentCard({ item, canEdit, categories, onEdit, onAdd
           )}
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
-          {onAddToShoppingList && (() => {
-            const cat = categories.find(c => c.id === item.category_id)
-            if (cat?.name !== 'Verbrauchsmaterial') return null
-            return (
+        <div className="flex flex-col items-end gap-0.5 shrink-0">
+          <div className="flex items-center gap-1">
+            {onAddToShoppingList && item.is_consumable && (
               <button
-                onClick={() => onAddToShoppingList(item)}
-                className="p-1.5 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded transition-colors"
+                onClick={handleCartClick}
+                className={`p-1.5 rounded transition-colors ${
+                  isOnList || feedback !== null
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                }`}
                 title="Auf Einkaufsliste"
               >
                 <ShoppingCart size={16} />
               </button>
-            )
-          })()}
-          {canEdit && (
-            <button
-              onClick={() => onEdit(item)}
-              className="p-1.5 text-gray-400 hover:text-blue-700 dark:hover:text-blue-400 rounded transition-colors"
-              title="Bearbeiten"
-            >
-              <Pencil size={16} />
-            </button>
+            )}
+            {canEdit && (
+              <button
+                onClick={() => onEdit(item)}
+                className="p-1.5 text-gray-400 hover:text-blue-700 dark:hover:text-blue-400 rounded transition-colors"
+                title="Bearbeiten"
+              >
+                <Pencil size={16} />
+              </button>
+            )}
+          </div>
+          {feedback && (
+            <span className={`text-xs ${feedback === 'added' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
+              {feedback === 'added' ? '✓ Hinzugefügt' : 'Bereits auf der Liste'}
+            </span>
           )}
         </div>
       </div>

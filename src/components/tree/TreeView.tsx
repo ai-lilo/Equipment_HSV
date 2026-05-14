@@ -13,8 +13,9 @@ interface Props {
   filterRoom: string
   filterCategory: string
   hideEmpty: boolean
+  openShoppingIds: Set<string>
   onEditEquipment: (item: Equipment) => void
-  onAddToShoppingList?: (item: Equipment) => void
+  onAddToShoppingList?: (item: Equipment) => Promise<'added' | 'duplicate'>
 }
 
 function matches(item: Equipment, q: string, categories: Category[]) {
@@ -29,7 +30,7 @@ function matches(item: Equipment, q: string, categories: Category[]) {
 
 export default function TreeView({
   rooms, cabinets, equipment, categories, user, searchQuery, filterRoom, filterCategory, hideEmpty,
-  onEditEquipment, onAddToShoppingList,
+  openShoppingIds, onEditEquipment, onAddToShoppingList,
 }: Props) {
   const canEdit = user.role === 'MEMBER' || user.role === 'ADMIN'
 
@@ -53,6 +54,7 @@ export default function TreeView({
           categories={categories}
           canEdit={canEdit}
           hideEmpty={hideEmpty}
+          openShoppingIds={openShoppingIds}
           onEditEquipment={onEditEquipment}
           onAddToShoppingList={onAddToShoppingList}
         />
@@ -64,15 +66,16 @@ export default function TreeView({
   )
 }
 
-function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, onEditEquipment, onAddToShoppingList }: {
+function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, openShoppingIds, onEditEquipment, onAddToShoppingList }: {
   room: Room
   cabinets: Cabinet[]
   equipment: Equipment[]
   categories: Category[]
   canEdit: boolean
   hideEmpty: boolean
+  openShoppingIds: Set<string>
   onEditEquipment: (item: Equipment) => void
-  onAddToShoppingList?: (item: Equipment) => void
+  onAddToShoppingList?: (item: Equipment) => Promise<'added' | 'duplicate'>
 }) {
   const [open, setOpen] = useState(true)
   const directItems = equipment.filter(e => e.room_id === room.id && !e.cabinet_id)
@@ -98,6 +101,7 @@ function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, o
           {directItems.map(item => (
             <EquipmentCard
               key={item.id} item={item} canEdit={canEdit} categories={categories}
+              openShoppingIds={openShoppingIds}
               onEdit={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
             />
           ))}
@@ -108,7 +112,8 @@ function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, o
             return (
               <CabinetNode
                 key={cab.id} cabinet={cab} items={items} categories={categories}
-                canEdit={canEdit} onEditEquipment={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
+                canEdit={canEdit} openShoppingIds={openShoppingIds}
+                onEditEquipment={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
               />
             )
           })}
@@ -124,13 +129,14 @@ function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, o
   )
 }
 
-function CabinetNode({ cabinet, items, categories, canEdit, onEditEquipment, onAddToShoppingList }: {
+function CabinetNode({ cabinet, items, categories, canEdit, openShoppingIds, onEditEquipment, onAddToShoppingList }: {
   cabinet: Cabinet
   items: Equipment[]
   categories: Category[]
   canEdit: boolean
+  openShoppingIds: Set<string>
   onEditEquipment: (item: Equipment) => void
-  onAddToShoppingList?: (item: Equipment) => void
+  onAddToShoppingList?: (item: Equipment) => Promise<'added' | 'duplicate'>
 }) {
   const [open, setOpen] = useState(true)
 
@@ -151,6 +157,7 @@ function CabinetNode({ cabinet, items, categories, canEdit, onEditEquipment, onA
           {items.map(item => (
             <EquipmentCard
               key={item.id} item={item} canEdit={canEdit} categories={categories}
+              openShoppingIds={openShoppingIds}
               onEdit={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
             />
           ))}

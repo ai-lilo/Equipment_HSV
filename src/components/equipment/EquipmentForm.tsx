@@ -24,6 +24,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
   const [roomId, setRoomId] = useState(item?.room_id ?? rooms[0]?.id ?? '')
   const [cabinetId, setCabinetId] = useState(item?.cabinet_id ?? initCabinetId ?? '')
   const [categoryId, setCategoryId] = useState<string>(item?.category_id ?? '')
+  const [isConsumable, setIsConsumable] = useState(item?.is_consumable ?? false)
   const { categories } = useCategories()
   const [description, setDescription] = useState(item?.description ?? '')
   const [status, setStatus] = useState<EquipmentStatus>(item?.status ?? 'OK')
@@ -77,6 +78,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
         room_id: roomId,
         cabinet_id: cabinetId || null,
         category_id: categoryId || null,
+        is_consumable: isConsumable,
         description: description.trim() || null,
         status,
         defect_note: (status !== 'OK' && defectNote.trim()) ? defectNote.trim() : null,
@@ -88,7 +90,8 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
 
       const uploadedUrl = await uploadPhoto(data.id)
       if (uploadedUrl !== null && uploadedUrl !== photoUrl) {
-        await supabase.from('equipment').update({ photo_url: uploadedUrl }).eq('id', data.id)
+        const { error: photoErr } = await supabase.from('equipment').update({ photo_url: uploadedUrl }).eq('id', data.id)
+        if (photoErr) { setError(`Foto-URL konnte nicht gespeichert werden: ${photoErr.message}`); setSaving(false); return }
       }
       if (status === 'DEFECT') await sendDefectNotification(name)
     } else {
@@ -101,6 +104,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
         room_id: roomId,
         cabinet_id: cabinetId || null,
         category_id: categoryId || null,
+        is_consumable: isConsumable,
         description: description.trim() || null,
         status,
         defect_note: (status !== 'OK' && defectNote.trim()) ? defectNote.trim() : null,
@@ -116,6 +120,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
         ['room_id', item.room_id, payload.room_id],
         ['cabinet_id', item.cabinet_id, payload.cabinet_id],
         ['category_id', item.category_id, payload.category_id],
+        ['is_consumable', String(item.is_consumable), String(payload.is_consumable)],
         ['status', item.status, payload.status],
         ['defect_note', item.defect_note, payload.defect_note],
       ]
@@ -206,9 +211,21 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
             <Field label="Kategorie">
               <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputCls}>
                 <option value="">— keine —</option>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {categories.filter(c => c.name !== 'Verbrauchsmaterial').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
+
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={isConsumable}
+                  onChange={e => setIsConsumable(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-700 focus:ring-blue-600"
+                />
+                Verbrauchsmaterial (wird auf Einkaufsliste angezeigt)
+              </label>
+            </div>
 
             <Field label="Beschreibung">
               <textarea

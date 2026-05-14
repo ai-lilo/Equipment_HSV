@@ -71,7 +71,7 @@ export default function ShoppingList({ user }: Props) {
         <div className="text-center py-16 text-gray-400">
           <ShoppingCart size={40} className="mx-auto mb-3 opacity-30" />
           <p>Die Einkaufsliste ist leer.</p>
-          <p className="text-sm mt-1">Equipment mit Kategorie „Verbrauchsmaterial" kann über den Warenkorb-Button hinzugefügt werden.</p>
+          <p className="text-sm mt-1">Verbrauchsmaterial kann über den Warenkorb-Button im Inventar hinzugefügt werden.</p>
         </div>
       )}
 

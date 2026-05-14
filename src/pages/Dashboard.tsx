@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Search, Plus, EyeOff, Eye, Filter, FileDown } from 'lucide-react'
 import TreeView from '../components/tree/TreeView'
 import EquipmentForm from '../components/equipment/EquipmentForm'
@@ -23,16 +23,30 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
   const [filterCategory, setFilterCategory] = useState('')
   const [hideEmpty, setHideEmpty] = useState(false)
   const [editItem, setEditItem] = useState<Equipment | null | 'new'>(null)
+  const [openShoppingIds, setOpenShoppingIds] = useState<Set<string>>(new Set())
 
   const canEdit = user.role === 'MEMBER' || user.role === 'ADMIN'
 
-  async function handleAddToShoppingList(item: Equipment) {
+  const loadShoppingIds = useCallback(async () => {
+    const { data } = await supabase
+      .from('shopping_list')
+      .select('equipment_id')
+      .eq('status', 'open')
+    setOpenShoppingIds(new Set((data ?? []).map((r: { equipment_id: string }) => r.equipment_id)))
+  }, [])
+
+  useEffect(() => { loadShoppingIds() }, [loadShoppingIds])
+
+  async function handleAddToShoppingList(item: Equipment): Promise<'added' | 'duplicate'> {
+    if (openShoppingIds.has(item.id)) return 'duplicate'
     await supabase.from('shopping_list').insert({
       equipment_id: item.id,
       added_by: user.id,
       status: 'open',
       updated_at: new Date().toISOString(),
     })
+    setOpenShoppingIds(prev => new Set([...prev, item.id]))
+    return 'added'
   }
 
   return (
@@ -74,7 +88,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
             className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
             <option value="">Alle Kategorien</option>
-            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {categories.filter(c => c.name !== 'Verbrauchsmaterial').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
 
           <button
@@ -132,6 +146,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
           filterRoom={filterRoom}
           filterCategory={filterCategory}
           hideEmpty={hideEmpty}
+          openShoppingIds={openShoppingIds}
           onEditEquipment={setEditItem}
           onAddToShoppingList={canEdit ? handleAddToShoppingList : undefined}
         />

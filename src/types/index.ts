@@ -49,6 +49,7 @@ export interface Equipment {
   cabinet_id: string | null
   sport: string | null
   category_id: string | null
+  is_consumable: boolean
   description: string | null
   status: EquipmentStatus
   defect_note: string | null
