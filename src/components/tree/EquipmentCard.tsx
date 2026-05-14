@@ -1,15 +1,17 @@
 import { useState } from 'react'
-import { Pencil, AlertCircle, Image as ImageIcon, X } from 'lucide-react'
+import { Pencil, AlertCircle, Image as ImageIcon, X, ShoppingCart } from 'lucide-react'
 import StatusBadge from '../ui/StatusBadge'
-import type { Equipment } from '../../types'
+import type { Equipment, Category } from '../../types'
 
 interface Props {
   item: Equipment
   canEdit: boolean
+  categories: Category[]
   onEdit: (item: Equipment) => void
+  onAddToShoppingList?: (item: Equipment) => void
 }
 
-export default function EquipmentCard({ item, canEdit, onEdit }: Props) {
+export default function EquipmentCard({ item, canEdit, categories, onEdit, onAddToShoppingList }: Props) {
   const [photoOpen, setPhotoOpen] = useState(false)
 
   return (
@@ -40,11 +42,14 @@ export default function EquipmentCard({ item, canEdit, onEdit }: Props) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-gray-900 dark:text-white truncate">{item.name}</span>
             <StatusBadge status={item.status} />
-            {item.sport && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
-                {item.sport}
-              </span>
-            )}
+            {item.category_id && (() => {
+              const cat = categories.find(c => c.id === item.category_id)
+              return cat ? (
+                <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                  {cat.name}
+                </span>
+              ) : null
+            })()}
           </div>
           <div className="flex items-center gap-3 mt-0.5">
             <span className="text-sm text-gray-500 dark:text-gray-400">Anzahl: {item.count}</span>
@@ -60,15 +65,30 @@ export default function EquipmentCard({ item, canEdit, onEdit }: Props) {
           )}
         </div>
 
-        {canEdit && (
-          <button
-            onClick={() => onEdit(item)}
-            className="p-1.5 text-gray-400 hover:text-blue-700 dark:hover:text-blue-400 rounded transition-colors shrink-0"
-            title="Bearbeiten"
-          >
-            <Pencil size={16} />
-          </button>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {onAddToShoppingList && (() => {
+            const cat = categories.find(c => c.id === item.category_id)
+            if (cat?.name !== 'Verbrauchsmaterial') return null
+            return (
+              <button
+                onClick={() => onAddToShoppingList(item)}
+                className="p-1.5 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded transition-colors"
+                title="Auf Einkaufsliste"
+              >
+                <ShoppingCart size={16} />
+              </button>
+            )
+          })()}
+          {canEdit && (
+            <button
+              onClick={() => onEdit(item)}
+              className="p-1.5 text-gray-400 hover:text-blue-700 dark:hover:text-blue-400 rounded transition-colors"
+              title="Bearbeiten"
+            >
+              <Pencil size={16} />
+            </button>
+          )}
+        </div>
       </div>
 
       {photoOpen && item.photo_url && (

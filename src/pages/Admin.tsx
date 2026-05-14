@@ -1,20 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { FileDown, Users, History } from 'lucide-react'
-import type { User, ChangeLog, Equipment, Room, Cabinet } from '../types'
+import { FileDown, Users, History, Tag, Pencil, Trash2, Check, X } from 'lucide-react'
+import { useCategories } from '../hooks/useCategories'
+import type { User, ChangeLog, Equipment, Room, Cabinet, Category } from '../types'
 
 interface Props {
   user: User
 }
 
 export default function Admin({ user: _user }: Props) {
-  const [tab, setTab] = useState<'users' | 'log' | 'pdf'>('users')
+  const [tab, setTab] = useState<'users' | 'log' | 'pdf' | 'categories'>('users')
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Admin</h1>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         <TabBtn active={tab === 'users'} onClick={() => setTab('users')}>
           <Users size={16} /> Benutzer
         </TabBtn>
@@ -24,11 +25,15 @@ export default function Admin({ user: _user }: Props) {
         <TabBtn active={tab === 'pdf'} onClick={() => setTab('pdf')}>
           <FileDown size={16} /> PDF-Export
         </TabBtn>
+        <TabBtn active={tab === 'categories'} onClick={() => setTab('categories')}>
+          <Tag size={16} /> Kategorien
+        </TabBtn>
       </div>
 
       {tab === 'users' && <UsersTab />}
       {tab === 'log' && <LogTab />}
       {tab === 'pdf' && <PdfTab />}
+      {tab === 'categories' && <CategoriesTab />}
     </div>
   )
 }
@@ -158,7 +163,7 @@ function LogTab() {
 
   const fieldLabel: Record<string, string> = {
     name: 'Name', count: 'Anzahl', room_id: 'Raum', cabinet_id: 'Schrank',
-    sport: 'Sportart', status: 'Status', defect_note: 'Defekt-Notiz',
+    sport: 'Sportart (alt)', category_id: 'Kategorie', status: 'Status', defect_note: 'Defekt-Notiz',
   }
 
   if (loading) return <p className="text-gray-400">Lade…</p>
@@ -204,6 +209,7 @@ function PdfTab() {
   const [equipment, setEquipment] = useState<Equipment[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
   const [cabinets, setCabinets] = useState<Cabinet[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const printRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -211,15 +217,18 @@ function PdfTab() {
       supabase.from('equipment').select('*').order('name'),
       supabase.from('rooms').select('*').order('name'),
       supabase.from('cabinets').select('*').order('name'),
-    ]).then(([e, r, c]) => {
+      supabase.from('categories').select('*').order('name'),
+    ]).then(([e, r, c, cat]) => {
       setEquipment((e.data ?? []) as Equipment[])
       setRooms((r.data ?? []) as Room[])
       setCabinets((c.data ?? []) as Cabinet[])
+      setCategories((cat.data ?? []) as Category[])
     })
   }, [])
 
   function roomName(id: string) { return rooms.find(r => r.id === id)?.name ?? id }
   function cabName(id: string | null) { return id ? (cabinets.find(c => c.id === id)?.name ?? '') : '' }
+  function catName(id: string | null) { return id ? (categories.find(c => c.id === id)?.name ?? '') : '' }
 
   const statusLabel: Record<string, string> = { OK: 'OK', DEFECT: 'Defekt', IN_REPAIR: 'In Reparatur' }
 
@@ -261,7 +270,7 @@ function PdfTab() {
               <th>Anzahl</th>
               <th>Raum</th>
               <th>Schrank</th>
-              <th>Sportart</th>
+              <th>Kategorie</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -272,12 +281,140 @@ function PdfTab() {
                 <td>{e.count}</td>
                 <td>{roomName(e.room_id)}</td>
                 <td>{cabName(e.cabinet_id)}</td>
-                <td>{e.sport ?? ''}</td>
+                <td>{catName(e.category_id)}</td>
                 <td className={e.status === 'DEFECT' ? 'defect' : e.status === 'IN_REPAIR' ? 'repair' : ''}>
                   {statusLabel[e.status]}
                 </td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+const inputCls = 'border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600'
+
+function CategoriesTab() {
+  const { categories, loading, addCategory, renameCategory, deleteCategory } = useCategories()
+  const [newName, setNewName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleAdd() {
+    if (!newName.trim()) return
+    setSaving(true)
+    setError(null)
+    const { error: err } = await addCategory(newName)
+    if (err) setError(err)
+    else setNewName('')
+    setSaving(false)
+  }
+
+  async function handleRename(id: string) {
+    if (!editingName.trim()) return
+    setError(null)
+    const { error: err } = await renameCategory(id, editingName)
+    if (err) setError(err)
+    else setEditingId(null)
+  }
+
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Kategorie „${name}" wirklich löschen?`)) return
+    setError(null)
+    const { error: err } = await deleteCategory(id)
+    if (err) setError(err)
+  }
+
+  if (loading) return <p className="text-gray-400">Lade…</p>
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <input
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          placeholder="Neue Kategorie"
+          className={`flex-1 ${inputCls}`}
+        />
+        <button
+          onClick={handleAdd}
+          disabled={saving || !newName.trim()}
+          className="px-4 py-2 bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+        >
+          Hinzufügen
+        </button>
+      </div>
+
+      {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
+
+      <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Name</th>
+              <th className="px-4 py-3 w-24"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            {categories.map(cat => (
+              <tr key={cat.id} className="bg-white dark:bg-gray-800">
+                <td className="px-4 py-3">
+                  {editingId === cat.id ? (
+                    <input
+                      value={editingName}
+                      onChange={e => setEditingName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRename(cat.id)
+                        if (e.key === 'Escape') setEditingId(null)
+                      }}
+                      autoFocus
+                      className={inputCls}
+                    />
+                  ) : (
+                    <span className="text-gray-900 dark:text-white">{cat.name}</span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-1 justify-end">
+                    {editingId === cat.id ? (
+                      <>
+                        <button onClick={() => handleRename(cat.id)} className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded" title="Speichern">
+                          <Check size={15} />
+                        </button>
+                        <button onClick={() => setEditingId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Abbrechen">
+                          <X size={15} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => { setEditingId(cat.id); setEditingName(cat.name) }}
+                          className="p-1.5 text-gray-400 hover:text-blue-700 dark:hover:text-blue-400 rounded"
+                          title="Umbenennen"
+                        >
+                          <Pencil size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(cat.id, cat.name)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+                          title="Löschen"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {categories.length === 0 && (
+              <tr><td colSpan={2} className="text-center text-gray-400 py-6">Keine Kategorien vorhanden</td></tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf'
-import type { Room, Cabinet, Equipment } from '../types'
+import type { Room, Cabinet, Equipment, Category } from '../types'
 
 const STATUS_LABEL: Record<string, string> = {
   OK: 'OK',
@@ -7,7 +7,7 @@ const STATUS_LABEL: Record<string, string> = {
   IN_REPAIR: 'In Reparatur',
 }
 
-export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment: Equipment[]) {
+export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment: Equipment[], categories: Category[]) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
   const pageW = doc.internal.pageSize.getWidth()
@@ -18,7 +18,14 @@ export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment
   let isFirst = true
 
   for (const room of rooms) {
-    const roomEquipment = equipment.filter(e => e.room_id === room.id)
+    const roomEquipment = equipment
+      .filter(e => e.room_id === room.id)
+      .sort((a, b) => {
+        const catA = categories.find(c => c.id === a.category_id)?.name ?? 'zzz'
+        const catB = categories.find(c => c.id === b.category_id)?.name ?? 'zzz'
+        if (catA !== catB) return catA.localeCompare(catB, 'de')
+        return a.name.localeCompare(b.name, 'de')
+      })
     if (roomEquipment.length === 0) continue
 
     if (!isFirst) doc.addPage()
@@ -54,7 +61,7 @@ export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment
     // Direct equipment (no cabinet)
     const directItems = roomEquipment.filter(e => !e.cabinet_id)
     if (directItems.length > 0) {
-      y = renderTable(doc, directItems, null, margin, y, contentW)
+      y = renderTable(doc, directItems, null, margin, y, contentW, categories)
       y += 4
     }
 
@@ -70,7 +77,7 @@ export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment
       doc.text(`Schrank: ${cabinet.name}`, margin + 2, y)
       y += 5
 
-      y = renderTable(doc, cabItems, cabinet.name, margin + 2, y, contentW - 2)
+      y = renderTable(doc, cabItems, cabinet.name, margin + 2, y, contentW - 2, categories)
       y += 4
     }
 
@@ -92,6 +99,7 @@ function renderTable(
   x: number,
   y: number,
   width: number,
+  categories: Category[],
 ): number {
   const colAnzahl = 20
   const colStatus = 28
@@ -110,7 +118,7 @@ function renderTable(
   doc.text('Name', x + 2, y + 4.2)
   doc.text('Anzahl', x + colName + 2, y + 4.2)
   doc.text('Status', x + colName + colAnzahl + 2, y + 4.2)
-  doc.text('Sportart', x + colName + colAnzahl + colStatus + 2, y + 4.2)
+  doc.text('Kategorie', x + colName + colAnzahl + colStatus + 2, y + 4.2)
   y += headerH
 
   for (const item of items) {
@@ -135,8 +143,9 @@ function renderTable(
     doc.text(statusLabel, x + colName + colAnzahl + 2, y + 4.8)
 
     doc.setTextColor(80, 80, 80)
-    if (item.sport) {
-      doc.text(item.sport, x + colName + colAnzahl + colStatus + 2, y + 4.8)
+    const catName = categories.find(c => c.id === item.category_id)?.name
+    if (catName) {
+      doc.text(catName, x + colName + colAnzahl + colStatus + 2, y + 4.8)
     }
 
     // Defect note

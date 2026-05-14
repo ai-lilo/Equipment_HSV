@@ -1,38 +1,42 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, DoorOpen, ArchiveX, Package } from 'lucide-react'
 import EquipmentCard from './EquipmentCard'
-import type { Room, Cabinet, Equipment, User } from '../../types'
+import type { Room, Cabinet, Equipment, User, Category } from '../../types'
 
 interface Props {
   rooms: Room[]
   cabinets: Cabinet[]
   equipment: Equipment[]
+  categories: Category[]
   user: User
   searchQuery: string
   filterRoom: string
-  filterSport: string
+  filterCategory: string
   hideEmpty: boolean
   onEditEquipment: (item: Equipment) => void
+  onAddToShoppingList?: (item: Equipment) => void
 }
 
-function matches(item: Equipment, q: string) {
+function matches(item: Equipment, q: string, categories: Category[]) {
   const lower = q.toLowerCase()
+  const catName = categories.find(c => c.id === item.category_id)?.name ?? ''
   return (
     item.name.toLowerCase().includes(lower) ||
-    (item.sport?.toLowerCase().includes(lower) ?? false) ||
+    catName.toLowerCase().includes(lower) ||
     (item.description?.toLowerCase().includes(lower) ?? false)
   )
 }
 
 export default function TreeView({
-  rooms, cabinets, equipment, user, searchQuery, filterRoom, filterSport, hideEmpty, onEditEquipment,
+  rooms, cabinets, equipment, categories, user, searchQuery, filterRoom, filterCategory, hideEmpty,
+  onEditEquipment, onAddToShoppingList,
 }: Props) {
   const canEdit = user.role === 'MEMBER' || user.role === 'ADMIN'
 
   const filtered = equipment.filter(e => {
-    if (searchQuery && !matches(e, searchQuery)) return false
+    if (searchQuery && !matches(e, searchQuery, categories)) return false
     if (filterRoom && e.room_id !== filterRoom) return false
-    if (filterSport && e.sport !== filterSport) return false
+    if (filterCategory && e.category_id !== filterCategory) return false
     return true
   })
 
@@ -46,9 +50,11 @@ export default function TreeView({
           room={room}
           cabinets={cabinets.filter(c => c.room_id === room.id)}
           equipment={filtered}
+          categories={categories}
           canEdit={canEdit}
           hideEmpty={hideEmpty}
           onEditEquipment={onEditEquipment}
+          onAddToShoppingList={onAddToShoppingList}
         />
       ))}
       {filteredRooms.length === 0 && (
@@ -58,13 +64,15 @@ export default function TreeView({
   )
 }
 
-function RoomNode({ room, cabinets, equipment, canEdit, hideEmpty, onEditEquipment }: {
+function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, onEditEquipment, onAddToShoppingList }: {
   room: Room
   cabinets: Cabinet[]
   equipment: Equipment[]
+  categories: Category[]
   canEdit: boolean
   hideEmpty: boolean
   onEditEquipment: (item: Equipment) => void
+  onAddToShoppingList?: (item: Equipment) => void
 }) {
   const [open, setOpen] = useState(true)
   const directItems = equipment.filter(e => e.room_id === room.id && !e.cabinet_id)
@@ -88,14 +96,20 @@ function RoomNode({ room, cabinets, equipment, canEdit, hideEmpty, onEditEquipme
       {open && (
         <div className="px-3 py-2 space-y-2 bg-white dark:bg-gray-850">
           {directItems.map(item => (
-            <EquipmentCard key={item.id} item={item} canEdit={canEdit} onEdit={onEditEquipment} />
+            <EquipmentCard
+              key={item.id} item={item} canEdit={canEdit} categories={categories}
+              onEdit={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
+            />
           ))}
 
           {cabinets.map(cab => {
             const items = cabinetItems(cab)
             if (hideEmpty && items.length === 0) return null
             return (
-              <CabinetNode key={cab.id} cabinet={cab} items={items} canEdit={canEdit} onEditEquipment={onEditEquipment} />
+              <CabinetNode
+                key={cab.id} cabinet={cab} items={items} categories={categories}
+                canEdit={canEdit} onEditEquipment={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
+              />
             )
           })}
 
@@ -110,11 +124,13 @@ function RoomNode({ room, cabinets, equipment, canEdit, hideEmpty, onEditEquipme
   )
 }
 
-function CabinetNode({ cabinet, items, canEdit, onEditEquipment }: {
+function CabinetNode({ cabinet, items, categories, canEdit, onEditEquipment, onAddToShoppingList }: {
   cabinet: Cabinet
   items: Equipment[]
+  categories: Category[]
   canEdit: boolean
   onEditEquipment: (item: Equipment) => void
+  onAddToShoppingList?: (item: Equipment) => void
 }) {
   const [open, setOpen] = useState(true)
 
@@ -133,7 +149,10 @@ function CabinetNode({ cabinet, items, canEdit, onEditEquipment }: {
       {open && (
         <div className="px-2 py-1.5 space-y-1.5 bg-white dark:bg-gray-800">
           {items.map(item => (
-            <EquipmentCard key={item.id} item={item} canEdit={canEdit} onEdit={onEditEquipment} />
+            <EquipmentCard
+              key={item.id} item={item} canEdit={canEdit} categories={categories}
+              onEdit={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
+            />
           ))}
           {items.length === 0 && (
             <p className="text-sm text-gray-400 py-1 px-1">Leer</p>

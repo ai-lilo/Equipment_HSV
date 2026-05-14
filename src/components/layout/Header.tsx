@@ -1,4 +1,4 @@
-import { Dog, Moon, Sun, LogOut, ShieldCheck, LayoutDashboard, DoorOpen } from 'lucide-react'
+import { Dog, Moon, Sun, LogOut, ShieldCheck, LayoutDashboard, DoorOpen, ShoppingCart } from 'lucide-react'
 import type { User } from '../../types'
 
 interface Props {
@@ -32,6 +32,12 @@ export default function Header({ user, page, onNavigate, onLogout, darkMode, onT
             <NavBtn active={page === 'rooms'} onClick={() => onNavigate('rooms')}>
               <DoorOpen size={16} />
               <span className="hidden sm:inline">Räume</span>
+            </NavBtn>
+          )}
+          {(user.role === 'MEMBER' || user.role === 'ADMIN') && (
+            <NavBtn active={page === 'shopping-list'} onClick={() => onNavigate('shopping-list')}>
+              <ShoppingCart size={16} />
+              <span className="hidden sm:inline">Einkaufsliste</span>
             </NavBtn>
           )}
           {user.role === 'ADMIN' && (

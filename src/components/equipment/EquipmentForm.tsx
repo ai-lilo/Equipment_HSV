@@ -3,8 +3,8 @@ import { X, Trash2, Save, Camera, Image as ImageIcon } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { sendDefectNotification, sendRepairedNotification } from '../../lib/push'
 import ConfirmDialog from '../ui/ConfirmDialog'
-import { SPORTS } from '../../types'
-import type { Equipment, Room, Cabinet, User, EquipmentStatus, Sport } from '../../types'
+import { useCategories } from '../../hooks/useCategories'
+import type { Equipment, Room, Cabinet, User, EquipmentStatus } from '../../types'
 
 interface Props {
   item: Equipment | null
@@ -23,7 +23,8 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
   const [count, setCount] = useState(String(item?.count ?? 1))
   const [roomId, setRoomId] = useState(item?.room_id ?? rooms[0]?.id ?? '')
   const [cabinetId, setCabinetId] = useState(item?.cabinet_id ?? initCabinetId ?? '')
-  const [sport, setSport] = useState<Sport | ''>(item?.sport ?? '')
+  const [categoryId, setCategoryId] = useState<string>(item?.category_id ?? '')
+  const { categories } = useCategories()
   const [description, setDescription] = useState(item?.description ?? '')
   const [status, setStatus] = useState<EquipmentStatus>(item?.status ?? 'OK')
   const [defectNote, setDefectNote] = useState(item?.defect_note ?? '')
@@ -75,7 +76,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
         count: parsedCount,
         room_id: roomId,
         cabinet_id: cabinetId || null,
-        sport: sport || null,
+        category_id: categoryId || null,
         description: description.trim() || null,
         status,
         defect_note: (status !== 'OK' && defectNote.trim()) ? defectNote.trim() : null,
@@ -99,7 +100,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
         count: parsedCount,
         room_id: roomId,
         cabinet_id: cabinetId || null,
-        sport: sport || null,
+        category_id: categoryId || null,
         description: description.trim() || null,
         status,
         defect_note: (status !== 'OK' && defectNote.trim()) ? defectNote.trim() : null,
@@ -114,7 +115,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
         ['count', String(item.count), String(payload.count)],
         ['room_id', item.room_id, payload.room_id],
         ['cabinet_id', item.cabinet_id, payload.cabinet_id],
-        ['sport', item.sport, payload.sport],
+        ['category_id', item.category_id, payload.category_id],
         ['status', item.status, payload.status],
         ['defect_note', item.defect_note, payload.defect_note],
       ]
@@ -202,10 +203,10 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
               </Field>
             )}
 
-            <Field label="Sportart">
-              <select value={sport} onChange={e => setSport(e.target.value as Sport | '')} className={inputCls}>
+            <Field label="Kategorie">
+              <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputCls}>
                 <option value="">— keine —</option>
-                {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </Field>
 

@@ -4,8 +4,9 @@ import TreeView from '../components/tree/TreeView'
 import EquipmentForm from '../components/equipment/EquipmentForm'
 import StatusOverview from '../components/ui/StatusOverview'
 import { useInventory } from '../hooks/useInventory'
+import { useCategories } from '../hooks/useCategories'
 import { exportInventoryPDF } from '../lib/pdf'
-import { SPORTS } from '../types'
+import { supabase } from '../lib/supabase'
 import type { User, Equipment } from '../types'
 
 interface Props {
@@ -16,13 +17,23 @@ interface Props {
 
 export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: initCabinet }: Props) {
   const { rooms, cabinets, equipment, loading, reload } = useInventory()
+  const { categories } = useCategories()
   const [search, setSearch] = useState('')
   const [filterRoom, setFilterRoom] = useState(initRoom ?? '')
-  const [filterSport, setFilterSport] = useState('')
+  const [filterCategory, setFilterCategory] = useState('')
   const [hideEmpty, setHideEmpty] = useState(false)
   const [editItem, setEditItem] = useState<Equipment | null | 'new'>(null)
 
   const canEdit = user.role === 'MEMBER' || user.role === 'ADMIN'
+
+  async function handleAddToShoppingList(item: Equipment) {
+    await supabase.from('shopping_list').insert({
+      equipment_id: item.id,
+      added_by: user.id,
+      status: 'open',
+      updated_at: new Date().toISOString(),
+    })
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
@@ -42,7 +53,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
             type="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Suche nach Equipment, Raum, Sportart…"
+            placeholder="Suche nach Equipment, Raum, Kategorie…"
             className="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
           />
         </div>
@@ -58,12 +69,12 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
           </select>
 
           <select
-            value={filterSport}
-            onChange={e => setFilterSport(e.target.value)}
+            value={filterCategory}
+            onChange={e => setFilterCategory(e.target.value)}
             className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
           >
-            <option value="">Alle Sportarten</option>
-            {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="">Alle Kategorien</option>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
 
           <button
@@ -74,9 +85,9 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
             {hideEmpty ? <Eye size={18} /> : <EyeOff size={18} />}
           </button>
 
-          {(filterRoom || filterSport || search) && (
+          {(filterRoom || filterCategory || search) && (
             <button
-              onClick={() => { setFilterRoom(''); setFilterSport(''); setSearch('') }}
+              onClick={() => { setFilterRoom(''); setFilterCategory(''); setSearch('') }}
               className="p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-red-600 transition-colors"
               title="Filter zurücksetzen"
             >
@@ -98,7 +109,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
         )}
         {!loading && (
           <button
-            onClick={() => exportInventoryPDF(rooms, cabinets, equipment)}
+            onClick={() => exportInventoryPDF(rooms, cabinets, equipment, categories)}
             className="flex items-center gap-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 px-4 py-2 rounded-lg font-medium transition-colors"
             title="Inventarliste als PDF exportieren"
           >
@@ -115,12 +126,14 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
           rooms={rooms}
           cabinets={cabinets}
           equipment={equipment}
+          categories={categories}
           user={user}
           searchQuery={search}
           filterRoom={filterRoom}
-          filterSport={filterSport}
+          filterCategory={filterCategory}
           hideEmpty={hideEmpty}
           onEditEquipment={setEditItem}
+          onAddToShoppingList={canEdit ? handleAddToShoppingList : undefined}
         />
       )}
 

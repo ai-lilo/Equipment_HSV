@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Rooms from './pages/Rooms'
 import Admin from './pages/Admin'
+import ShoppingList from './pages/ShoppingList'
 
 function useDarkMode() {
   const [dark, setDark] = useState(() => {
@@ -64,6 +65,9 @@ export default function App() {
         )}
         {page === 'admin' && user.role === 'ADMIN' && (
           <Admin user={user} />
+        )}
+        {page === 'shopping-list' && (user.role === 'MEMBER' || user.role === 'ADMIN') && (
+          <ShoppingList user={user} />
         )}
       </main>
     </div>
