@@ -54,9 +54,12 @@ export default function Rooms({ user }: Props) {
     setDeleteRoom(null)
   }
 
-  async function saveCabinet(name: string, roomId: string, id?: string) {
+  async function saveCabinet(name: string, roomId: string, id?: string, originalRoomId?: string) {
     if (id) {
-      await supabase.from('cabinets').update({ name, updated_at: new Date().toISOString() }).eq('id', id)
+      await supabase.from('cabinets').update({ name, room_id: roomId, updated_at: new Date().toISOString() }).eq('id', id)
+      if (originalRoomId && roomId !== originalRoomId) {
+        await supabase.from('equipment').update({ room_id: roomId }).eq('cabinet_id', id)
+      }
     } else {
       await supabase.from('cabinets').insert({ name, room_id: roomId })
     }
@@ -160,10 +163,11 @@ export default function Rooms({ user }: Props) {
       )}
 
       {editCabinet !== null && (
-        <NameDialog
-          title={editCabinet.cabinet ? 'Schrank bearbeiten' : 'Schrank hinzufügen'}
-          initial={editCabinet.cabinet?.name ?? ''}
-          onSave={name => saveCabinet(name, editCabinet.roomId, editCabinet.cabinet?.id)}
+        <CabinetDialog
+          cabinet={editCabinet.cabinet}
+          roomId={editCabinet.roomId}
+          rooms={rooms}
+          onSave={(name, newRoomId) => saveCabinet(name, newRoomId, editCabinet.cabinet?.id, editCabinet.roomId)}
           onCancel={() => setEditCabinet(null)}
         />
       )}
@@ -194,6 +198,67 @@ export default function Rooms({ user }: Props) {
 }
 
 const iconBtn = 'p-1.5 rounded text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors'
+
+function CabinetDialog({ cabinet, roomId, rooms, onSave, onCancel }: {
+  cabinet: Cabinet | null
+  roomId: string
+  rooms: Room[]
+  onSave: (name: string, roomId: string) => void
+  onCancel: () => void
+}) {
+  const [name, setName] = useState(cabinet?.name ?? '')
+  const [selectedRoom, setSelectedRoom] = useState(roomId)
+  const isEditing = cabinet !== null
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+        <h2 className="font-bold text-lg text-gray-900 dark:text-white">
+          {isEditing ? 'Schrank bearbeiten' : 'Schrank hinzufügen'}
+        </h2>
+        <div className="space-y-3">
+          <input
+            autoFocus
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && name.trim() && onSave(name.trim(), selectedRoom)}
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+            placeholder="Name"
+          />
+          {isEditing && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Raum</label>
+              <select
+                value={selectedRoom}
+                onChange={e => setSelectedRoom(e.target.value)}
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              >
+                {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+              {selectedRoom !== roomId && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  Alle Equipment-Einträge in diesem Schrank werden in den neuen Raum verschoben.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-3 justify-end">
+          <button onClick={onCancel} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            Abbrechen
+          </button>
+          <button
+            onClick={() => name.trim() && onSave(name.trim(), selectedRoom)}
+            disabled={!name.trim()}
+            className="px-4 py-2 rounded-lg bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white font-semibold transition-colors"
+          >
+            Speichern
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function NameDialog({ title, initial, onSave, onCancel }: {
   title: string
