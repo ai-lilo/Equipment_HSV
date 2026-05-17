@@ -15,18 +15,7 @@ interface Props {
   onDeleteTask: (id: string) => Promise<void>
   onRenameCategory: (id: string, name: string) => Promise<void>
   onDeleteCategory: (id: string) => Promise<void>
-}
-
-const CHECKLIST_NAMES = [
-  'aufbau: platz',
-  'aufbau: parcours',
-  'aufbau: vorbereitungsraum',
-  'meldebüro: am veranstaltungstag',
-  'küche: turniertag',
-]
-
-function isChecklistCategory(name: string): boolean {
-  return CHECKLIST_NAMES.some(n => name.toLowerCase().includes(n))
+  onAddChecklistCategory: (name: string) => Promise<void>
 }
 
 interface CatBlockProps {
@@ -95,7 +84,7 @@ function ChecklistCategoryBlock({
               className="flex-1 text-sm border border-blue-400 rounded px-2 py-0.5 dark:bg-gray-700 dark:text-white outline-none"
             />
             <button onClick={() => { onRenameCategory(cat.id, newName.trim()); setRenaming(false) }} className="text-green-600"><Check size={15} /></button>
-            <button onClick={() => { setRenaming(false); setNewName(cat.name) }} className="text-gray-400"><X size={15} /></button>
+            <button onClick={() => { setRenaming(false); setNewName(cat.name) }} className="text-gray-400 dark:text-gray-500"><X size={15} /></button>
           </div>
         ) : (
           <div className="flex-1">
@@ -114,7 +103,7 @@ function ChecklistCategoryBlock({
               ><Plus size={14} /></button>
               <button
                 onClick={() => setRenaming(true)}
-                className="p-1 rounded text-gray-400 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-800/40"
+                className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40"
                 title="Umbenennen"
               ><Pencil size={13} /></button>
               {confirmDeleteCat ? (
@@ -174,7 +163,7 @@ function ChecklistCategoryBlock({
                       className="flex-1 text-sm border border-blue-400 rounded px-2 py-0.5 dark:bg-gray-700 dark:text-white outline-none"
                     />
                     <button onClick={() => handleRenameTask(task)} className="text-green-600"><Check size={15} /></button>
-                    <button onClick={() => setEditingTaskId(null)} className="text-gray-400"><X size={15} /></button>
+                    <button onClick={() => setEditingTaskId(null)} className="text-gray-400 dark:text-gray-500"><X size={15} /></button>
                   </div>
                 ) : (
                   <span className={`flex-1 text-sm ${checked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
@@ -186,7 +175,7 @@ function ChecklistCategoryBlock({
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => { setEditingTaskId(task.id); setEditingTitle(task.title); setConfirmDeleteTaskId(null) }}
-                      className="p-0.5 rounded text-gray-400 hover:text-blue-600"
+                      className="p-0.5 rounded text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
                       title="Aufgabe umbenennen"
                     ><Pencil size={12} /></button>
                     {confirmDeleteTaskId === task.id ? (
@@ -197,7 +186,7 @@ function ChecklistCategoryBlock({
                     ) : (
                       <button
                         onClick={() => setConfirmDeleteTaskId(task.id)}
-                        className="p-0.5 rounded text-gray-400 hover:text-red-600"
+                        className="p-0.5 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400"
                         title="Aufgabe löschen"
                       ><Trash2 size={12} /></button>
                     )}
@@ -236,18 +225,19 @@ function ChecklistCategoryBlock({
   )
 }
 
-export default function ChecklistTab({ tournamentName, categories, tasks, isAdmin, onUpdateTask, onAddTask, onDeleteTask, onRenameCategory, onDeleteCategory }: Props) {
+export default function ChecklistTab({ tournamentName, categories, tasks, isAdmin, onUpdateTask, onAddTask, onDeleteTask, onRenameCategory, onDeleteCategory, onAddChecklistCategory }: Props) {
+  const [showNewCatInput, setShowNewCatInput] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+
   const checklistCats = categories
-    .filter(c => isChecklistCategory(c.name))
+    .filter(c => c.is_checklist)
     .sort((a, b) => a.sort_order - b.sort_order)
 
-  if (checklistCats.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-        <p className="text-sm">Keine Checklisten-Kategorien in diesem Turnier.</p>
-        <p className="text-xs mt-1 opacity-70">Checklisten werden für die Kategorien Aufbau Platz, Aufbau Parcours, Aufbau Vorbereitungsraum, Meldebüro am Veranstaltungstag und Küche Turniertag erstellt.</p>
-      </div>
-    )
+  async function handleAddCategory() {
+    if (!newCatName.trim()) return
+    await onAddChecklistCategory(newCatName.trim())
+    setNewCatName('')
+    setShowNewCatInput(false)
   }
 
   async function buildEquipmentMap(taskIds: string[]): Promise<Record<string, TaskEquipmentEntry[]>> {
@@ -284,14 +274,46 @@ export default function ChecklistTab({ tournamentName, categories, tasks, isAdmi
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <button
-          onClick={handlePrintAll}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-        >
-          <FileDown size={16} /> Alle Checklisten drucken
-        </button>
+      <div className="flex items-center justify-between gap-2">
+        {checklistCats.length > 0 && (
+          <button
+            onClick={handlePrintAll}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            <FileDown size={16} /> Alle Checklisten drucken
+          </button>
+        )}
+        {isAdmin && (
+          showNewCatInput ? (
+            <div className="flex items-center gap-2 flex-1 max-w-xs ml-auto">
+              <input
+                autoFocus
+                value={newCatName}
+                onChange={e => setNewCatName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') { setShowNewCatInput(false); setNewCatName('') } }}
+                placeholder="Kategoriename..."
+                className="flex-1 text-sm border border-blue-400 rounded-lg px-2 py-1.5 dark:bg-gray-700 dark:text-white outline-none"
+              />
+              <button onClick={handleAddCategory} className="text-green-600"><Check size={16} /></button>
+              <button onClick={() => { setShowNewCatInput(false); setNewCatName('') }} className="text-gray-400 dark:text-gray-500"><X size={16} /></button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewCatInput(true)}
+              className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900"
+            >
+              <Plus size={15} /> Neue Checkliste
+            </button>
+          )
+        )}
       </div>
+
+      {checklistCats.length === 0 && (
+        <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+          <p className="text-sm">Noch keine Checklisten angelegt.</p>
+          {isAdmin && <p className="text-xs mt-1 opacity-70">Klicke auf „Neue Checkliste" um eine Kategorie anzulegen.</p>}
+        </div>
+      )}
 
       {checklistCats.map(cat => (
         <ChecklistCategoryBlock

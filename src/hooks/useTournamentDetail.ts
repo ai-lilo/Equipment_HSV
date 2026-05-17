@@ -47,6 +47,14 @@ export function useTournamentDetail(tournamentId: string | null) {
     await load()
   }
 
+  async function addChecklistCategory(name: string) {
+    const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order), 0)
+    await supabase.from('tournament_categories').insert({
+      tournament_id: tournamentId, name, sort_order: maxOrder + 10, is_checklist: true,
+    })
+    await load()
+  }
+
   async function reorderCategories(orderedIds: string[]) {
     const updates = orderedIds.map((id, i) =>
       supabase.from('tournament_categories').update({ sort_order: (i + 1) * 10 }).eq('id', id)
@@ -108,6 +116,7 @@ export function useTournamentDetail(tournamentId: string | null) {
     loading,
     load,
     addCategory,
+    addChecklistCategory,
     renameCategory,
     deleteCategory,
     reorderCategories,

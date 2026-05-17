@@ -110,14 +110,14 @@ export default function EquipmentLinker({ taskId, readOnly }: Props) {
                   placeholder="Equipment suchen..."
                   className="flex-1 text-sm bg-transparent outline-none text-gray-900 dark:text-white"
                 />
-                <button onClick={() => { setShowSearch(false); setSearch('') }} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => { setShowSearch(false); setSearch('') }} className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                   <X size={14} />
                 </button>
               </div>
               {search && (
                 <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {filtered.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-gray-400">Keine Ergebnisse</div>
+                    <div className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">Keine Ergebnisse</div>
                   ) : (
                     filtered.map(e => (
                       <button

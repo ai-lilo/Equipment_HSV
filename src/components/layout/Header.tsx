@@ -9,8 +9,8 @@ interface Props {
 }
 
 const roleLabel: Record<string, string> = {
-  VISITOR: 'Besucher',
-  MEMBER: 'Mitglied',
+  VISITOR: 'Mitglied',
+  MEMBER: 'Vorstandschaft',
   ADMIN: 'Admin',
 }
 

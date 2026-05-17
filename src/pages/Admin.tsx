@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { FileDown, Users, History, Tag, Pencil, Trash2, Check, X, DoorOpen } from 'lucide-react'
+import { FileDown, Users, History, Tag, Pencil, Trash2, Check, X, DoorOpen, Shield } from 'lucide-react'
 import { useCategories } from '../hooks/useCategories'
 import type { User, ChangeLog, Equipment, Room, Cabinet, Category } from '../types'
 import Rooms from './Rooms'
@@ -10,7 +10,7 @@ interface Props {
 }
 
 export default function Admin({ user }: Props) {
-  const [tab, setTab] = useState<'users' | 'log' | 'pdf' | 'categories' | 'raeume'>('users')
+  const [tab, setTab] = useState<'users' | 'log' | 'pdf' | 'categories' | 'raeume' | 'datenschutz'>('users')
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
@@ -32,6 +32,9 @@ export default function Admin({ user }: Props) {
         <TabBtn active={tab === 'raeume'} onClick={() => setTab('raeume')}>
           <DoorOpen size={16} /> Räume
         </TabBtn>
+        <TabBtn active={tab === 'datenschutz'} onClick={() => setTab('datenschutz')}>
+          <Shield size={16} /> Datenschutz
+        </TabBtn>
       </div>
 
       {tab === 'users' && <UsersTab />}
@@ -39,6 +42,7 @@ export default function Admin({ user }: Props) {
       {tab === 'pdf' && <PdfTab />}
       {tab === 'categories' && <CategoriesTab />}
       {tab === 'raeume' && <Rooms user={user} />}
+      {tab === 'datenschutz' && <DatenschutzTab />}
     </div>
   )
 }
@@ -88,7 +92,7 @@ function UsersTab() {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, role } : u))
   }
 
-  if (loading) return <p className="text-gray-400">Lade…</p>
+  if (loading) return <p className="text-gray-400 dark:text-gray-500">Lade…</p>
 
   return (
     <div className="space-y-4">
@@ -104,8 +108,8 @@ function UsersTab() {
           onChange={e => setNewRole(e.target.value as 'VISITOR' | 'MEMBER' | 'ADMIN')}
           className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
         >
-          <option value="VISITOR">Besucher</option>
-          <option value="MEMBER">Mitglied</option>
+          <option value="VISITOR">Mitglied</option>
+          <option value="MEMBER">Vorstandschaft</option>
           <option value="ADMIN">Admin</option>
         </select>
         <button
@@ -145,7 +149,7 @@ function UsersTab() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-gray-400">Benutzernamen können nur direkt in Supabase geändert werden.</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500">Benutzernamen können nur direkt in Supabase geändert werden.</p>
 
       {/* Rechteübersicht */}
       <div className="mt-6">
@@ -155,23 +159,24 @@ function UsersTab() {
             <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
                 <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Funktion</th>
-                <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Besucher</th>
                 <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Mitglied</th>
+                <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Vorstandschaft</th>
                 <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Admin</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {[
-                ['Equipment einsehen', true, true, true],
-                ['Veranstaltungen einsehen', true, true, true],
-                ['Meine Aufgaben', true, true, true],
-                ['Einkaufsliste', false, true, true],
-                ['Equipment bearbeiten', false, false, true],
-                ['Veranstaltungen verwalten', false, false, true],
-                ['Kategorien verwalten', false, false, true],
-                ['Räume verwalten', false, false, true],
-                ['Benutzer verwalten', false, false, true],
-                ['Admin-Bereich', false, false, true],
+                ['Equipment einsehen',        true,  true,  true ],
+                ['Veranstaltungen einsehen',  true,  true,  true ],
+                ['Meine Aufgaben',            true,  true,  true ],
+                ['Einkaufsliste',             false, true,  true ],
+                ['Equipment bearbeiten',      false, true,  true ],
+                ['Equipment löschen',         false, true,  true ],
+                ['Veranstaltungen verwalten', false, true,  true ],
+                ['Kategorien verwalten',      false, false, true ],
+                ['Räume verwalten',           false, false, true ],
+                ['Benutzer verwalten',        false, false, true ],
+                ['Admin-Bereich',             false, false, true ],
               ].map(([label, visitor, member, admin]) => (
                 <tr key={label as string} className="bg-white dark:bg-gray-800">
                   <td className="px-4 py-2.5 text-gray-700 dark:text-gray-200">{label as string}</td>
@@ -214,7 +219,7 @@ function LogTab() {
     sport: 'Sportart (alt)', category_id: 'Kategorie', status: 'Status', defect_note: 'Defekt-Notiz',
   }
 
-  if (loading) return <p className="text-gray-400">Lade…</p>
+  if (loading) return <p className="text-gray-400 dark:text-gray-500">Lade…</p>
 
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -231,12 +236,12 @@ function LogTab() {
         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
           {logs.map(log => (
             <tr key={log.id} className="bg-white dark:bg-gray-800">
-              <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">
+              <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {new Date(log.changed_at).toLocaleString('de-DE')}
               </td>
               <td className="px-4 py-2.5 text-gray-900 dark:text-white">{log.user?.username ?? '—'}</td>
               <td className="px-4 py-2.5 text-gray-900 dark:text-white">{log.equipment?.name ?? '—'}</td>
-              <td className="px-4 py-2.5 text-gray-500">{fieldLabel[log.field] ?? log.field}</td>
+              <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{fieldLabel[log.field] ?? log.field}</td>
               <td className="px-4 py-2.5">
                 <span className="text-red-500 line-through">{log.old_value ?? '—'}</span>
                 {' → '}
@@ -245,7 +250,7 @@ function LogTab() {
             </tr>
           ))}
           {logs.length === 0 && (
-            <tr><td colSpan={5} className="text-center text-gray-400 py-8">Keine Einträge</td></tr>
+            <tr><td colSpan={5} className="text-center text-gray-400 dark:text-gray-500 py-8">Keine Einträge</td></tr>
           )}
         </tbody>
       </table>
@@ -294,7 +299,7 @@ function PdfTab() {
         .defect{color:#dc2626} .repair{color:#d97706}
       </style></head>
       <body>${printRef.current.innerHTML}
-      <script>window.onload=()=>window.print()</script>
+      <script>window.onload=()=>{window.print();window.addEventListener('afterprint',()=>window.close())}</script>
       </body></html>
     `)
     win.document.close()
@@ -377,7 +382,7 @@ function CategoriesTab() {
     if (err) setError(err)
   }
 
-  if (loading) return <p className="text-gray-400">Lade…</p>
+  if (loading) return <p className="text-gray-400 dark:text-gray-500">Lade…</p>
 
   return (
     <div className="space-y-4">
@@ -461,10 +466,105 @@ function CategoriesTab() {
               </tr>
             ))}
             {categories.length === 0 && (
-              <tr><td colSpan={2} className="text-center text-gray-400 py-6">Keine Kategorien vorhanden</td></tr>
+              <tr><td colSpan={2} className="text-center text-gray-400 dark:text-gray-500 py-6">Keine Kategorien vorhanden</td></tr>
             )}
           </tbody>
         </table>
+      </div>
+    </div>
+  )
+}
+
+function DatenschutzTab() {
+  const sectionCls = 'mb-6'
+  const h2Cls = 'text-base font-semibold text-gray-900 dark:text-white mb-2'
+  const pCls = 'text-sm text-gray-700 dark:text-gray-300 leading-relaxed'
+  const liCls = 'text-sm text-gray-700 dark:text-gray-300'
+
+  return (
+    <div className="max-w-2xl space-y-1">
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3 mb-6">
+        <p className="text-sm text-blue-800 dark:text-blue-300">
+          Diese Datenschutzerklärung beschreibt, welche Daten in der Inventar-App des HSV Pegnitz gespeichert werden,
+          wo sie liegen und wer Zugriff hat.
+        </p>
+      </div>
+
+      <div className={sectionCls}>
+        <h2 className={h2Cls}>Welche Daten werden gespeichert?</h2>
+        <ul className="list-disc list-inside space-y-1 pl-1">
+          <li className={liCls}><strong>Benutzerkonten:</strong> Benutzername und Rolle (Mitglied / Vorstandschaft / Admin)</li>
+          <li className={liCls}><strong>Inventar:</strong> Equipment-Daten inkl. Name, Anzahl, Standort, Status und optionalem Foto</li>
+          <li className={liCls}><strong>Veranstaltungen:</strong> Name, Datum, Aufgaben, Kategorien, Notizen, Best Practices und Vorlagen</li>
+          <li className={liCls}><strong>Checklisten:</strong> Kategorien und Aufgaben mit Status (erledigt / offen)</li>
+          <li className={liCls}><strong>Einkaufsliste:</strong> Einträge mit Bezug zum Equipment und zuständigem Benutzer</li>
+          <li className={liCls}><strong>Änderungsprotokoll:</strong> Wer welches Equipment wann geändert hat (Feld, alter und neuer Wert)</li>
+          <li className={liCls}><strong>Push-Benachrichtigungs-Abonnement:</strong> Browser-Push-Endpunkt (wird nur intern für Benachrichtigungen genutzt)</li>
+        </ul>
+      </div>
+
+      <div className={sectionCls}>
+        <h2 className={h2Cls}>Wo werden die Daten gespeichert?</h2>
+        <p className={pCls}>
+          Alle Daten werden in einer <strong>Supabase-Datenbank (PostgreSQL)</strong> gespeichert.
+          Supabase betreibt seine EU-Infrastruktur in der Region <strong>Frankfurt (eu-central-1)</strong>.
+          Das Frontend (diese App) wird als statische Seite über <strong>GitHub Pages</strong> bereitgestellt –
+          dort werden keine Daten gespeichert.
+        </p>
+      </div>
+
+      <div className={sectionCls}>
+        <h2 className={h2Cls}>Wer hat Zugriff auf die Daten?</h2>
+        <ul className="list-disc list-inside space-y-1 pl-1">
+          <li className={liCls}><strong>Mitglieder</strong> können Inventar und Veranstaltungen einsehen</li>
+          <li className={liCls}><strong>Vorstandschaft</strong> kann zusätzlich Inventar und Veranstaltungen verwalten sowie die Einkaufsliste nutzen</li>
+          <li className={liCls}><strong>Admin</strong> hat vollen Zugriff einschließlich Benutzerverwaltung und Änderungsprotokoll</li>
+          <li className={liCls}><strong>Supabase Inc.</strong> als Auftragsverarbeiter hat im Rahmen des Hostings technischen Zugriff auf die Infrastruktur</li>
+        </ul>
+      </div>
+
+      <div className={sectionCls}>
+        <h2 className={h2Cls}>Dritte und externe Dienste</h2>
+        <p className={pCls}>
+          Es werden <strong>keine Analyse- oder Tracking-Tools</strong> eingesetzt (kein Google Analytics, kein Meta, kein Hotjar o. Ä.).
+          Der einzige externe Dienstleister ist <strong>Supabase Inc.</strong> (Datenbank und Push-Benachrichtigungen).
+          Daten werden nicht an weitere Dritte weitergegeben oder verkauft.
+        </p>
+      </div>
+
+      <div className={sectionCls}>
+        <h2 className={h2Cls}>Push-Benachrichtigungen</h2>
+        <p className={pCls}>
+          Wenn Push-Benachrichtigungen aktiviert werden, speichert der Browser einen verschlüsselten Endpunkt-Token
+          in der Datenbank. Dieser wird ausschließlich verwendet, um interne Benachrichtigungen zu senden
+          (z. B. bei Defektmeldungen). Der Token kann jederzeit durch Deaktivierung von Browser-Push-Benachrichtigungen
+          widerrufen werden.
+        </p>
+      </div>
+
+      <div className={sectionCls}>
+        <h2 className={h2Cls}>Datenlöschung</h2>
+        <p className={pCls}>
+          Benutzerkonten und zugehörige Daten können auf Anfrage von der Administratorin (Sabine Neupert)
+          manuell gelöscht werden. Die App selbst bietet keine automatische Selbstlöschung.
+        </p>
+      </div>
+
+      <div className={sectionCls}>
+        <h2 className={h2Cls}>Sicherheit</h2>
+        <p className={pCls}>
+          Alle Datenübertragungen erfolgen verschlüsselt über <strong>HTTPS/TLS</strong>.
+          Der Zugriff ist über ein Rollenmodell (Mitglied / Vorstandschaft / Admin) abgesichert.
+          Die App ist nur für interne Vereinsmitglieder bestimmt – ein Benutzerkonto muss vom Admin angelegt werden.
+        </p>
+      </div>
+
+      <div className={sectionCls}>
+        <h2 className={h2Cls}>Kontakt</h2>
+        <p className={pCls}>
+          Bei Fragen zum Datenschutz oder zur Löschung von Daten wende dich an:<br />
+          <strong>Sabine Neupert</strong> · <a href="mailto:neupert.sabine@outlook.com" className="text-blue-700 dark:text-blue-400 underline">neupert.sabine@outlook.com</a>
+        </p>
       </div>
     </div>
   )

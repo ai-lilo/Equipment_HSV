@@ -32,8 +32,8 @@ type ArchiveStep = 'choice' | 'new-name' | 'replace-pick' | 'replace-confirm'
 export default function TournamentDetail({
   tournament, currentUser, templates, onBack, onArchive, onUnarchive, onDelete, onCreateTemplate, onReplaceTemplate, onNavigateEquipment
 }: Props) {
-  const isAdmin = currentUser.role === 'ADMIN'
-  const { categories, tasks, note, bestPractices, loading, addCategory, renameCategory, deleteCategory, reorderCategories, addTask, updateTask, deleteTask, saveNote } = useTournamentDetail(tournament.id)
+  const isAdmin = currentUser.role === 'ADMIN' || currentUser.role === 'MEMBER'
+  const { categories, tasks, note, bestPractices, loading, addCategory, addChecklistCategory, renameCategory, deleteCategory, reorderCategories, addTask, updateTask, deleteTask, saveNote } = useTournamentDetail(tournament.id)
   const users = useAllUsers()
 
   const [innerTab, setInnerTab] = useState<InnerTab>('aufgaben')
@@ -88,7 +88,7 @@ export default function TournamentDetail({
     <div className="max-w-5xl mx-auto px-4 py-6">
       {/* Back + Header */}
       <div className="flex items-start gap-3 mb-4">
-        <button onClick={onBack} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0">
+        <button onClick={onBack} className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0">
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1 min-w-0">
@@ -163,7 +163,7 @@ export default function TournamentDetail({
       {innerTab === 'aufgaben' && (
         <>
           {loading ? (
-            <div className="text-center py-8 text-gray-400">Lädt...</div>
+            <div className="text-center py-8 text-gray-400 dark:text-gray-500">Lädt...</div>
           ) : (
             <>
               <DashboardTiles tasks={tasks} activeFilter={statusFilter} onFilter={setStatusFilter} />
@@ -278,7 +278,7 @@ export default function TournamentDetail({
       {/* KALENDER */}
       {innerTab === 'kalender' && (
         loading ? (
-          <div className="text-center py-8 text-gray-400">Lädt...</div>
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500">Lädt...</div>
         ) : (
           <TournamentTimeline tasks={tasks} categories={categories} users={users} />
         )
@@ -287,7 +287,7 @@ export default function TournamentDetail({
       {/* CHECKLISTEN */}
       {innerTab === 'checklisten' && (
         loading ? (
-          <div className="text-center py-8 text-gray-400">Lädt...</div>
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500">Lädt...</div>
         ) : (
           <ChecklistTab
             tournamentName={tournament.name}
@@ -299,6 +299,7 @@ export default function TournamentDetail({
             onDeleteTask={deleteTask}
             onRenameCategory={renameCategory}
             onDeleteCategory={deleteCategory}
+            onAddChecklistCategory={addChecklistCategory}
           />
         )
       )}
@@ -306,7 +307,7 @@ export default function TournamentDetail({
       {/* MEINE AUFGABEN */}
       {innerTab === 'meine' && (
         loading ? (
-          <div className="text-center py-8 text-gray-400">Lädt...</div>
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500">Lädt...</div>
         ) : (() => {
           const myTasks = tasks.filter(t => t.responsible_user_id === currentUser.id && t.status !== 'abgeschlossen')
           if (myTasks.length === 0) {
@@ -407,7 +408,7 @@ export default function TournamentDetail({
                       Bestehende Vorlage ersetzen
                     </button>
                   )}
-                  <button onClick={() => setArchiveDialog(false)} className="text-xs text-gray-400 hover:text-gray-600 mt-1">Abbrechen</button>
+                  <button onClick={() => setArchiveDialog(false)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 mt-1">Abbrechen</button>
                 </div>
               </>
             )}
@@ -469,7 +470,7 @@ export default function TournamentDetail({
               <>
                 <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Wirklich ersetzen?</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                  Die Vorlage „{templates.find(t => t.id === selectedTemplateId)?.name}" wird unwiderruflich überschrieben.
+                  Die Vorlage „{templates.find(t => t.id === selectedTemplateId)?.name}" wird überschrieben. Die vorherige Version kann anschließend im Vorlagen-Panel wiederhergestellt werden.
                 </p>
                 <div className="flex gap-2 justify-end">
                   <button onClick={() => setArchiveStep('replace-pick')} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300">Zurück</button>

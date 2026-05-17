@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trophy, Archive, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Trophy, Archive, ChevronDown, ChevronRight, RotateCcw, FileText } from 'lucide-react'
 import type { User } from '../types'
 import type { Tournament } from '../types/tournament'
 import { useTournaments } from '../hooks/useTournaments'
@@ -15,10 +15,12 @@ interface Props {
 type MainTab = 'uebersicht' | 'meine'
 
 export default function Tournament({ user, onNavigate }: Props) {
-  const isAdmin = user.role === 'ADMIN'
-  const { tournaments, templates, loading, createTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate } = useTournaments()
+  const isAdmin = user.role === 'ADMIN' || user.role === 'MEMBER'
+  const { tournaments, templates, loading, createTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate, restoreTemplate } = useTournaments()
 
   const [mainTab, setMainTab] = useState<MainTab>('uebersicht')
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [restoreConfirmId, setRestoreConfirmId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
@@ -129,6 +131,56 @@ export default function Tournament({ user, onNavigate }: Props) {
             </>
           )}
         </>
+      )}
+
+      {/* VORLAGEN-PANEL (nur Admin/Vorstandschaft, nur wenn Templates vorhanden) */}
+      {mainTab === 'uebersicht' && isAdmin && templates.length > 0 && (
+        <div className="mt-6">
+          <button
+            onClick={() => setShowTemplates(o => !o)}
+            className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+          >
+            {showTemplates ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            <FileText size={15} />
+            <span>Vorlagen ({templates.length})</span>
+          </button>
+          {showTemplates && (
+            <div className="mt-3 space-y-2">
+              {templates.map(tmpl => (
+                <div
+                  key={tmpl.id}
+                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 flex items-center gap-3"
+                >
+                  <FileText size={16} className="text-gray-400 dark:text-gray-500 shrink-0" />
+                  <span className="flex-1 text-sm font-medium text-gray-800 dark:text-white">{tmpl.name}</span>
+                  {tmpl.previous_source_tournament_id && (
+                    restoreConfirmId === tmpl.id ? (
+                      <span className="flex items-center gap-2 text-xs">
+                        <span className="text-gray-600 dark:text-gray-300">Wirklich wiederherstellen?</span>
+                        <button
+                          onClick={async () => { await restoreTemplate(tmpl.id); setRestoreConfirmId(null) }}
+                          className="px-2 py-1 rounded bg-orange-600 text-white hover:bg-orange-700"
+                        >Ja</button>
+                        <button
+                          onClick={() => setRestoreConfirmId(null)}
+                          className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                        >Nein</button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setRestoreConfirmId(tmpl.id)}
+                        className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 border border-orange-200 dark:border-orange-700 px-2 py-1 rounded-lg"
+                        title="Vorherige Vorlage wiederherstellen"
+                      >
+                        <RotateCcw size={12} /> Wiederherstellen
+                      </button>
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* MEINE AUFGABEN */}

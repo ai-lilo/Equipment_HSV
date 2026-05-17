@@ -93,7 +93,7 @@ function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, o
         {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
         <DoorOpen size={18} className="text-blue-600 dark:text-blue-400" />
         <span className="font-semibold text-gray-900 dark:text-white">{room.name}</span>
-        <span className="ml-auto text-xs text-gray-400">{totalInRoom} Artikel</span>
+        <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{totalInRoom} Artikel</span>
       </button>
 
       {open && (
@@ -149,7 +149,7 @@ function CabinetNode({ cabinet, items, categories, canEdit, openShoppingIds, onE
         {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         <ArchiveX size={16} className="text-blue-500" />
         <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{cabinet.name}</span>
-        <span className="ml-auto text-xs text-gray-400">{items.length}</span>
+        <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{items.length}</span>
       </button>
 
       {open && (
@@ -162,7 +162,7 @@ function CabinetNode({ cabinet, items, categories, canEdit, openShoppingIds, onE
             />
           ))}
           {items.length === 0 && (
-            <p className="text-sm text-gray-400 py-1 px-1">Leer</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 py-1 px-1">Leer</p>
           )}
         </div>
       )}

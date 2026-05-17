@@ -314,7 +314,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
           </div>
 
           <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-            {!isNew && user.role === 'ADMIN' && (
+            {!isNew && (user.role === 'ADMIN' || user.role === 'MEMBER') && (
               <button
                 onClick={() => setConfirmDelete(true)}
                 className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"

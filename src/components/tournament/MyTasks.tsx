@@ -75,7 +75,7 @@ export default function MyTasks({ currentUser }: Props) {
   let content: ReactNode
 
   if (loading) {
-    content = <div className="text-center py-8 text-gray-400">Lädt...</div>
+    content = <div className="text-center py-8 text-gray-400 dark:text-gray-500">Lädt...</div>
   } else if (tasks.length === 0) {
     content = (
       <div className="text-center py-12 text-gray-400 dark:text-gray-500">

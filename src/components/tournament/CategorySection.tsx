@@ -89,7 +89,7 @@ export default function CategorySection({
                 className="flex-1 text-sm border border-blue-400 rounded px-2 py-0.5 dark:bg-gray-700 dark:text-white outline-none"
               />
               <button onClick={() => { onRename(category.id, newName.trim()); setRenaming(false) }} className="text-green-600"><Check size={15} /></button>
-              <button onClick={() => { setRenaming(false); setNewName(category.name) }} className="text-gray-400"><X size={15} /></button>
+              <button onClick={() => { setRenaming(false); setNewName(category.name) }} className="text-gray-400 dark:text-gray-500"><X size={15} /></button>
             </div>
           ) : (
             <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-white">{category.name}</span>
@@ -106,7 +106,7 @@ export default function CategorySection({
               >
                 <Plus size={15} />
               </button>
-              <button onClick={() => setRenaming(true)} className="p-1 rounded text-gray-400 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <button onClick={() => setRenaming(true)} className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                 <Pencil size={13} />
               </button>
               {confirmDeleteCat ? (
@@ -116,7 +116,7 @@ export default function CategorySection({
                   <button onClick={() => setConfirmDeleteCat(false)} className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Nein</button>
                 </span>
               ) : (
-                <button onClick={() => setConfirmDeleteCat(true)} className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                <button onClick={() => setConfirmDeleteCat(true)} className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
                   <Trash2 size={13} />
                 </button>
               )}

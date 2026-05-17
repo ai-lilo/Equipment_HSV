@@ -16,6 +16,7 @@ export interface TournamentCategory {
   tournament_id: string
   name: string
   sort_order: number
+  is_checklist: boolean
 }
 
 export interface TournamentTask {
@@ -34,6 +35,7 @@ export interface TournamentTemplate {
   id: string
   name: string
   source_tournament_id: string | null
+  previous_source_tournament_id: string | null
 }
 
 export interface TournamentNote {

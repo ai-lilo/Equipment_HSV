@@ -142,14 +142,45 @@ export function useTournaments() {
     const tmplTournamentId = await buildTemplateFromTournament(sourceTournamentId)
     if (!tmplTournamentId) return
 
+    // Alte Vorlage archivieren statt löschen (ermöglicht Wiederherstellung)
     if (existing?.source_tournament_id) {
-      await supabase.from('tournaments').delete().eq('id', existing.source_tournament_id)
+      await supabase.from('tournaments')
+        .update({ archived: true, is_template: false })
+        .eq('id', existing.source_tournament_id)
     }
 
     await supabase
       .from('tournament_templates')
-      .update({ source_tournament_id: tmplTournamentId })
+      .update({
+        source_tournament_id: tmplTournamentId,
+        previous_source_tournament_id: existing?.source_tournament_id ?? null,
+      })
       .eq('id', existingTemplateId)
+
+    await load()
+  }
+
+  async function restoreTemplate(templateId: string) {
+    const template = templates.find(t => t.id === templateId)
+    if (!template?.previous_source_tournament_id) return
+
+    // Neu erstellte Vorlage löschen
+    if (template.source_tournament_id) {
+      await supabase.from('tournaments').delete().eq('id', template.source_tournament_id)
+    }
+
+    // Alte Vorlage reaktivieren
+    await supabase.from('tournaments')
+      .update({ archived: false, is_template: true })
+      .eq('id', template.previous_source_tournament_id)
+
+    await supabase
+      .from('tournament_templates')
+      .update({
+        source_tournament_id: template.previous_source_tournament_id,
+        previous_source_tournament_id: null,
+      })
+      .eq('id', templateId)
 
     await load()
   }
@@ -169,5 +200,5 @@ export function useTournaments() {
     await load()
   }
 
-  return { tournaments, templates, loading, load, createTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate }
+  return { tournaments, templates, loading, load, createTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate, restoreTemplate }
 }

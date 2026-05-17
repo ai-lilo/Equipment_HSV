@@ -30,8 +30,8 @@ export default function TaskForm({ task, users, currentUser, onSave, onDelete, o
   const isMember = currentUser.role === 'MEMBER'
   const isOwn = task?.responsible_user_id === currentUser.id
 
-  const canEditAll = isAdmin
-  const canEditOwn = isMember && isOwn
+  const canEditAll = isAdmin || isMember
+  const canEditOwn = !canEditAll && isOwn
 
   const [title, setTitle] = useState(task?.title ?? '')
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'nicht_begonnen')

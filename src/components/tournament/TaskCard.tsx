@@ -31,8 +31,7 @@ const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
 
 export default function TaskCard({ task, users, currentUser, onEdit, onStatusChange }: Props) {
   const overdue = isOverdue(task)
-  const canEdit = currentUser.role === 'ADMIN' ||
-    (currentUser.role === 'MEMBER' && task.responsible_user_id === currentUser.id)
+  const canEdit = currentUser.role === 'ADMIN' || currentUser.role === 'MEMBER'
 
   const responsible = task.responsible_user_id
     ? users.find(u => u.id === task.responsible_user_id)?.username
