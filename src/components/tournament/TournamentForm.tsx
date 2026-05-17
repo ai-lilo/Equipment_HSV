@@ -28,7 +28,7 @@ export default function TournamentForm({ templates, onSave, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md p-5 shadow-xl">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-gray-900 dark:text-white">Neues Turnier</h2>
+          <h2 className="text-base font-bold text-gray-900 dark:text-white">Neue Veranstaltung</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
             <X size={20} />
           </button>
@@ -79,7 +79,7 @@ export default function TournamentForm({ templates, onSave, onClose }: Props) {
             disabled={saving || !name.trim() || !date}
             className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900 disabled:opacity-50"
           >
-            <Plus size={15} /> {saving ? 'Anlegen...' : 'Turnier anlegen'}
+            <Plus size={15} /> {saving ? 'Anlegen...' : 'Veranstaltung anlegen'}
           </button>
         </div>
       </div>

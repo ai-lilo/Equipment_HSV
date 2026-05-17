@@ -56,13 +56,13 @@ export default function Tournament({ user, onNavigate }: Props) {
       {/* Page header */}
       <div className="flex items-center gap-3 mb-6">
         <Trophy size={24} className="text-blue-800 dark:text-blue-400 shrink-0" />
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Turnier-Organisation</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Veranstaltungs-Organisation</h1>
         {isAdmin && (
           <button
             onClick={() => setShowForm(true)}
             className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900"
           >
-            <Plus size={16} /> Turnier anlegen
+            <Plus size={16} /> Veranstaltung anlegen
           </button>
         )}
       </div>
@@ -95,8 +95,8 @@ export default function Tournament({ user, onNavigate }: Props) {
               {active.length === 0 ? (
                 <div className="text-center py-12 text-gray-400 dark:text-gray-500">
                   <Trophy size={40} className="mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">Noch keine aktiven Turniere.</p>
-                  {isAdmin && <p className="text-xs mt-1">Klicke auf "Turnier anlegen" um zu beginnen.</p>}
+                  <p className="text-sm">Noch keine aktiven Veranstaltungen.</p>
+                  {isAdmin && <p className="text-xs mt-1">Klicke auf "Veranstaltung anlegen" um zu beginnen.</p>}
                 </div>
               ) : (
                 <div className="space-y-3">

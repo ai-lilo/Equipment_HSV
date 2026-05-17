@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, Save, Trash2 } from 'lucide-react'
+import flatpickr from 'flatpickr'
+import { German } from 'flatpickr/dist/l10n/de.js'
+import 'flatpickr/dist/flatpickr.min.css'
 import type { User } from '../../types'
 import type { TournamentTask, TaskStatus } from '../../types/tournament'
 import EquipmentLinker from './EquipmentLinker'
@@ -37,6 +40,8 @@ export default function TaskForm({ task, users, currentUser, onSave, onDelete, o
   const [notes, setNotes] = useState(task?.notes ?? '')
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const dateInputRef = useRef<HTMLInputElement>(null)
+  const fpRef = useRef<flatpickr.Instance | null>(null)
 
   useEffect(() => {
     setTitle(task?.title ?? '')
@@ -45,6 +50,29 @@ export default function TaskForm({ task, users, currentUser, onSave, onDelete, o
     setDueDate(task?.due_date ?? '')
     setNotes(task?.notes ?? '')
   }, [task])
+
+  useEffect(() => {
+    if (!dateInputRef.current) return
+    fpRef.current = flatpickr(dateInputRef.current, {
+      locale: German,
+      dateFormat: 'd.m.Y',
+      defaultDate: dueDate || undefined,
+      onChange: (dates) => {
+        if (dates[0]) {
+          const d = dates[0]
+          const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          setDueDate(iso)
+        } else {
+          setDueDate('')
+        }
+      },
+    }) as flatpickr.Instance
+    return () => { fpRef.current?.destroy() }
+  }, [])
+
+  useEffect(() => {
+    fpRef.current?.setDate(dueDate || '', false)
+  }, [dueDate])
 
   async function handleSave() {
     if (!title.trim()) return
@@ -122,11 +150,22 @@ export default function TaskForm({ task, users, currentUser, onSave, onDelete, o
           {/* Zieldatum */}
           {canEditAll && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Zieldatum</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Zieldatum</label>
+                {dueDate && (
+                  <button
+                    type="button"
+                    onClick={() => { setDueDate(''); fpRef.current?.clear() }}
+                    className="text-xs text-gray-400 hover:text-red-500"
+                  >
+                    × Datum entfernen
+                  </button>
+                )}
+              </div>
               <input
-                type="date"
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
+                ref={dateInputRef}
+                readOnly
+                placeholder="TT.MM.JJJJ"
                 className={inputCls}
               />
             </div>

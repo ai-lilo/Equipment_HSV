@@ -24,13 +24,13 @@ export default function NotesSection({ note, bestPractices, isAdmin, onSaveNote 
     <div className="space-y-4">
       {/* Notes */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">📝 Turniernotizen</h3>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">📝 Veranstaltungsnotizen</h3>
         <textarea
           value={content}
           onChange={e => setContent(e.target.value)}
           disabled={!isAdmin}
           rows={6}
-          placeholder={isAdmin ? 'Notizen zum Turnier, Verbesserungsideen, Besonderheiten...' : 'Keine Notizen vorhanden.'}
+          placeholder={isAdmin ? 'Notizen zur Veranstaltung, Verbesserungsideen, Besonderheiten...' : 'Keine Notizen vorhanden.'}
           className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-60"
         />
         {isAdmin && (

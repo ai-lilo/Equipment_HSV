@@ -1,14 +1,15 @@
 import { useState, useRef } from 'react'
 import { ArrowLeft, Plus, FileDown, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import type { User } from '../../types'
-import type { Tournament, TournamentTemplate } from '../../types/tournament'
-import { useTournamentDetail } from '../../hooks/useTournamentDetail'
+import type { Tournament, TournamentTemplate, TournamentTask } from '../../types/tournament'
+import { useTournamentDetail, isOverdue } from '../../hooks/useTournamentDetail'
 import { useAllUsers } from '../../hooks/useAllUsers'
 import DashboardTiles from './DashboardTiles'
 import CategorySection from './CategorySection'
 import NotesSection from './NotesSection'
 import TournamentTimeline from './TournamentTimeline'
 import ChecklistTab from './ChecklistTab'
+import TaskForm from './TaskForm'
 import { exportTournamentPDF, type TaskEquipmentEntry } from '../../lib/tournamentPdf'
 import { supabase } from '../../lib/supabase'
 
@@ -25,7 +26,7 @@ interface Props {
   onNavigateEquipment: () => void
 }
 
-type InnerTab = 'aufgaben' | 'notizen' | 'kalender' | 'checklisten'
+type InnerTab = 'aufgaben' | 'notizen' | 'kalender' | 'checklisten' | 'meine'
 type ArchiveStep = 'choice' | 'new-name' | 'replace-pick' | 'replace-confirm'
 
 export default function TournamentDetail({
@@ -73,8 +74,11 @@ export default function TournamentDetail({
   const dateStr = new Date(tournament.date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
   const isArchived = tournament.archived
 
+  const [myTaskEdit, setMyTaskEdit] = useState<TournamentTask | null>(null)
+
   const tabs: { key: InnerTab; label: string }[] = [
     { key: 'aufgaben',    label: 'Aufgaben' },
+    { key: 'meine',       label: 'Meine Aufgaben' },
     { key: 'notizen',     label: 'Notizen' },
     { key: 'kalender',    label: 'Kalender' },
     { key: 'checklisten', label: 'Checklisten' },
@@ -245,13 +249,13 @@ export default function TournamentDetail({
                 <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
                   {confirmDelete ? (
                     <div className="flex items-center gap-3 p-3 bg-red-50 dark:bg-red-950/20 rounded-xl border border-red-200 dark:border-red-700">
-                      <p className="text-sm text-red-700 dark:text-red-300 flex-1">Turnier wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</p>
+                      <p className="text-sm text-red-700 dark:text-red-300 flex-1">Veranstaltung wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.</p>
                       <button onClick={() => onDelete(tournament.id)} className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700">Löschen</button>
                       <button onClick={() => setConfirmDelete(false)} className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300">Abbrechen</button>
                     </div>
                   ) : (
                     <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                      <Trash2 size={13} /> Turnier löschen
+                      <Trash2 size={13} /> Veranstaltung löschen
                     </button>
                   )}
                 </div>
@@ -289,9 +293,88 @@ export default function TournamentDetail({
             tournamentName={tournament.name}
             categories={categories}
             tasks={tasks}
+            isAdmin={isAdmin}
             onUpdateTask={updateTask}
+            onAddTask={(catId, title) => addTask(catId, title, currentUser.id)}
+            onDeleteTask={deleteTask}
+            onRenameCategory={renameCategory}
+            onDeleteCategory={deleteCategory}
           />
         )
+      )}
+
+      {/* MEINE AUFGABEN */}
+      {innerTab === 'meine' && (
+        loading ? (
+          <div className="text-center py-8 text-gray-400">Lädt...</div>
+        ) : (() => {
+          const myTasks = tasks.filter(t => t.responsible_user_id === currentUser.id && t.status !== 'abgeschlossen')
+          if (myTasks.length === 0) {
+            return (
+              <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+                <p className="text-2xl mb-2">✅</p>
+                <p className="text-sm">Keine offenen Aufgaben für dich in dieser Veranstaltung.</p>
+              </div>
+            )
+          }
+          return (
+            <>
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{myTasks.length} offene Aufgabe{myTasks.length !== 1 ? 'n' : ''}</p>
+                {myTasks.map(task => {
+                  const overdue = isOverdue(task)
+                  const daysUntilDue = task.due_date
+                    ? Math.ceil((new Date(task.due_date).getTime() - Date.now()) / 86400000)
+                    : null
+                  const urgent = daysUntilDue !== null && daysUntilDue <= 3 && !overdue
+                  const catName = categories.find(c => c.id === task.category_id)?.name ?? '—'
+
+                  const borderCls = overdue
+                    ? 'border-red-400 bg-red-50 dark:bg-red-950/20 dark:border-red-600'
+                    : urgent
+                      ? 'border-orange-300 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-600'
+                      : 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700'
+
+                  return (
+                    <button
+                      key={task.id}
+                      onClick={() => setMyTaskEdit(task)}
+                      className={`w-full text-left border rounded-xl px-4 py-3 ${borderCls} hover:shadow-sm transition-shadow`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">{task.title}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{catName}</p>
+                        </div>
+                        {overdue && <span className="shrink-0 text-xs font-bold text-red-600 dark:text-red-400">🔴 Überfällig</span>}
+                        {urgent && !overdue && <span className="shrink-0 text-xs font-bold text-orange-600 dark:text-orange-400">⚠️ Bald fällig</span>}
+                      </div>
+                      {task.due_date && (
+                        <p className={`text-xs mt-1 ${overdue ? 'text-red-600 dark:text-red-400' : urgent ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400'}`}>
+                          📅 {new Date(task.due_date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                          {daysUntilDue !== null && !overdue && ` (in ${daysUntilDue} Tag${daysUntilDue !== 1 ? 'en' : ''})`}
+                        </p>
+                      )}
+                      {task.notes && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 italic">📝 {task.notes}</p>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              {myTaskEdit && (
+                <TaskForm
+                  task={myTaskEdit}
+                  users={users}
+                  currentUser={currentUser}
+                  onSave={async changes => { await updateTask(myTaskEdit.id, changes) }}
+                  onClose={() => setMyTaskEdit(null)}
+                  onNavigateEquipment={onNavigateEquipment}
+                />
+              )}
+            </>
+          )
+        })()
       )}
 
       {/* ARCHIVIEREN-DIALOG */}
@@ -300,8 +383,8 @@ export default function TournamentDetail({
           <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm p-5 shadow-xl">
             {archiveStep === 'choice' && (
               <>
-                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Turnier archivieren</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Möchtest du dieses Turnier auch als Vorlage speichern?</p>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Veranstaltung archivieren</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Möchtest du diese Veranstaltung auch als Vorlage speichern?</p>
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={async () => { setArchiving(true); await onArchive(tournament.id); setArchiveDialog(false); setArchiving(false) }}

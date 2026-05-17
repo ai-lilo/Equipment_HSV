@@ -34,7 +34,7 @@ export default function Header({ user, page, onNavigate, onLogout }: Props) {
           )}
           <NavBtn active={page === 'turnier'} onClick={() => onNavigate('turnier')}>
             <Trophy size={16} />
-            <span className="hidden sm:inline">Turnier</span>
+            <span className="hidden sm:inline">Veranstaltung</span>
           </NavBtn>
           {user.role === 'ADMIN' && (
             <NavBtn active={page === 'admin'} onClick={() => onNavigate('admin')}>

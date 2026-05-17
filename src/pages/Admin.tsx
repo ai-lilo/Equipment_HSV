@@ -146,6 +146,49 @@ function UsersTab() {
         </table>
       </div>
       <p className="text-xs text-gray-400">Benutzernamen können nur direkt in Supabase geändert werden.</p>
+
+      {/* Rechteübersicht */}
+      <div className="mt-6">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">Rechteübersicht</h3>
+        <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Funktion</th>
+                <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Besucher</th>
+                <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Mitglied</th>
+                <th className="text-center px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Admin</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              {[
+                ['Equipment einsehen', true, true, true],
+                ['Veranstaltungen einsehen', true, true, true],
+                ['Meine Aufgaben', true, true, true],
+                ['Einkaufsliste', false, true, true],
+                ['Equipment bearbeiten', false, false, true],
+                ['Veranstaltungen verwalten', false, false, true],
+                ['Kategorien verwalten', false, false, true],
+                ['Räume verwalten', false, false, true],
+                ['Benutzer verwalten', false, false, true],
+                ['Admin-Bereich', false, false, true],
+              ].map(([label, visitor, member, admin]) => (
+                <tr key={label as string} className="bg-white dark:bg-gray-800">
+                  <td className="px-4 py-2.5 text-gray-700 dark:text-gray-200">{label as string}</td>
+                  {([visitor, member, admin] as boolean[]).map((allowed, i) => (
+                    <td key={i} className="px-4 py-2.5 text-center">
+                      {allowed
+                        ? <span className="text-green-600 dark:text-green-400 font-bold">✓</span>
+                        : <span className="text-gray-300 dark:text-gray-600">—</span>
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

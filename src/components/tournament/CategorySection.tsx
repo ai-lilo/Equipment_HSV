@@ -36,6 +36,7 @@ export default function CategorySection({
   const [addingTitle, setAddingTitle] = useState('')
   const [showAddInput, setShowAddInput] = useState(false)
   const [editTask, setEditTask] = useState<TournamentTask | null>(null)
+  const [confirmDeleteCat, setConfirmDeleteCat] = useState(false)
   const addInputRef = useRef<HTMLInputElement>(null)
 
   const visibleTasks = tasks.filter(t => {
@@ -108,9 +109,17 @@ export default function CategorySection({
               <button onClick={() => setRenaming(true)} className="p-1 rounded text-gray-400 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                 <Pencil size={13} />
               </button>
-              <button onClick={() => onDelete(category.id)} className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                <Trash2 size={13} />
-              </button>
+              {confirmDeleteCat ? (
+                <span className="flex items-center gap-1 text-xs">
+                  <span className="text-red-600 dark:text-red-400 font-medium">Löschen?</span>
+                  <button onClick={() => { onDelete(category.id); setConfirmDeleteCat(false) }} className="px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Ja</button>
+                  <button onClick={() => setConfirmDeleteCat(false)} className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Nein</button>
+                </span>
+              ) : (
+                <button onClick={() => setConfirmDeleteCat(true)} className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                  <Trash2 size={13} />
+                </button>
+              )}
             </>
           )}
         </div>

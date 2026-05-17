@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { User } from '../../types'
 import type { TournamentTask, TournamentCategory, Tournament } from '../../types/tournament'
@@ -64,24 +64,27 @@ export default function MyTasks({ currentUser }: Props) {
   async function handleSave(changes: Partial<TournamentTask>) {
     if (!selectedTask) return
     await supabase.from('tasks').update(changes).eq('id', selectedTask.id)
-    await load()
+    if (changes.status === 'abgeschlossen') {
+      setTasks(prev => prev.filter(t => t.id !== selectedTask.id))
+      setSelectedTask(null)
+    } else {
+      setTasks(prev => prev.map(t => t.id === selectedTask.id ? { ...t, ...changes } : t))
+    }
   }
+
+  let content: ReactNode
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-400">Lädt...</div>
-  }
-
-  if (tasks.length === 0) {
-    return (
+    content = <div className="text-center py-8 text-gray-400">Lädt...</div>
+  } else if (tasks.length === 0) {
+    content = (
       <div className="text-center py-12 text-gray-400 dark:text-gray-500">
         <p className="text-2xl mb-2">✅</p>
         <p className="text-sm">Keine offenen Aufgaben für dich.</p>
       </div>
     )
-  }
-
-  return (
-    <>
+  } else {
+    content = (
       <div className="space-y-2">
         <p className="text-xs text-gray-500 dark:text-gray-400">{tasks.length} offene Aufgabe{tasks.length !== 1 ? 'n' : ''}</p>
         {tasks.map(task => {
@@ -126,7 +129,12 @@ export default function MyTasks({ currentUser }: Props) {
           )
         })}
       </div>
+    )
+  }
 
+  return (
+    <>
+      {content}
       {selectedTask && (
         <TaskForm
           task={selectedTask}
