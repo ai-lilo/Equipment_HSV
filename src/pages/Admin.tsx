@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { FileDown, Users, History, Tag, Pencil, Trash2, Check, X } from 'lucide-react'
+import { FileDown, Users, History, Tag, Pencil, Trash2, Check, X, DoorOpen } from 'lucide-react'
 import { useCategories } from '../hooks/useCategories'
 import type { User, ChangeLog, Equipment, Room, Cabinet, Category } from '../types'
+import Rooms from './Rooms'
 
 interface Props {
   user: User
 }
 
-export default function Admin({ user: _user }: Props) {
-  const [tab, setTab] = useState<'users' | 'log' | 'pdf' | 'categories'>('users')
+export default function Admin({ user }: Props) {
+  const [tab, setTab] = useState<'users' | 'log' | 'pdf' | 'categories' | 'raeume'>('users')
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
@@ -28,12 +29,16 @@ export default function Admin({ user: _user }: Props) {
         <TabBtn active={tab === 'categories'} onClick={() => setTab('categories')}>
           <Tag size={16} /> Kategorien
         </TabBtn>
+        <TabBtn active={tab === 'raeume'} onClick={() => setTab('raeume')}>
+          <DoorOpen size={16} /> Räume
+        </TabBtn>
       </div>
 
       {tab === 'users' && <UsersTab />}
       {tab === 'log' && <LogTab />}
       {tab === 'pdf' && <PdfTab />}
       {tab === 'categories' && <CategoriesTab />}
+      {tab === 'raeume' && <Rooms user={user} />}
     </div>
   )
 }

@@ -1,12 +1,6 @@
 import jsPDF from 'jspdf'
 import type { Room, Cabinet, Equipment, Category } from '../types'
 
-const STATUS_LABEL: Record<string, string> = {
-  OK: 'OK',
-  DEFECT: 'Defekt',
-  IN_REPAIR: 'In Reparatur',
-}
-
 export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment: Equipment[], categories: Category[]) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
@@ -102,9 +96,8 @@ function renderTable(
   categories: Category[],
 ): number {
   const colAnzahl = 20
-  const colStatus = 28
-  const colSport = 38
-  const colName = width - colAnzahl - colStatus - colSport
+  const colSport = 42
+  const colName = width - colAnzahl - colSport
 
   const headerH = 6
   const rowH = 7
@@ -117,14 +110,11 @@ function renderTable(
   doc.setFont('helvetica', 'bold')
   doc.text('Name', x + 2, y + 4.2)
   doc.text('Anzahl', x + colName + 2, y + 4.2)
-  doc.text('Status', x + colName + colAnzahl + 2, y + 4.2)
-  doc.text('Kategorie', x + colName + colAnzahl + colStatus + 2, y + 4.2)
+  doc.text('Kategorie', x + colName + colAnzahl + 2, y + 4.2)
   y += headerH
 
   for (const item of items) {
-    doc.setFillColor(item.status === 'DEFECT' ? 254 : item.status === 'IN_REPAIR' ? 255 : 255,
-                     item.status === 'DEFECT' ? 242 : item.status === 'IN_REPAIR' ? 251 : 255,
-                     item.status === 'DEFECT' ? 242 : item.status === 'IN_REPAIR' ? 235 : 255)
+    doc.setFillColor(255, 255, 255)
     doc.rect(x, y, width, rowH, 'F')
 
     doc.setFontSize(8.5)
@@ -136,16 +126,10 @@ function renderTable(
     doc.text(nameText, x + 2, y + 4.8)
     doc.text(String(item.count), x + colName + 2, y + 4.8)
 
-    const statusLabel = STATUS_LABEL[item.status] ?? item.status
-    if (item.status === 'DEFECT') doc.setTextColor(185, 28, 28)
-    else if (item.status === 'IN_REPAIR') doc.setTextColor(161, 98, 7)
-    else doc.setTextColor(22, 101, 52)
-    doc.text(statusLabel, x + colName + colAnzahl + 2, y + 4.8)
-
     doc.setTextColor(80, 80, 80)
     const catName = categories.find(c => c.id === item.category_id)?.name
     if (catName) {
-      doc.text(catName, x + colName + colAnzahl + colStatus + 2, y + 4.8)
+      doc.text(catName, x + colName + colAnzahl + 2, y + 4.8)
     }
 
     // Defect note

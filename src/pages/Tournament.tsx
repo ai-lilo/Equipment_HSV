@@ -16,7 +16,7 @@ type MainTab = 'uebersicht' | 'meine'
 
 export default function Tournament({ user, onNavigate }: Props) {
   const isAdmin = user.role === 'ADMIN'
-  const { tournaments, templates, loading, createTournament, archiveTournament, unarchiveTournament, deleteTournament } = useTournaments()
+  const { tournaments, templates, loading, createTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate } = useTournaments()
 
   const [mainTab, setMainTab] = useState<MainTab>('uebersicht')
   const [showForm, setShowForm] = useState(false)
@@ -38,10 +38,13 @@ export default function Tournament({ user, onNavigate }: Props) {
       <TournamentDetail
         tournament={selected}
         currentUser={user}
+        templates={templates}
         onBack={() => setSelectedId(null)}
         onArchive={async id => { await archiveTournament(id); setSelectedId(null) }}
         onUnarchive={async id => { await unarchiveTournament(id) }}
         onDelete={async id => { await deleteTournament(id); setSelectedId(null) }}
+        onCreateTemplate={async (id, name) => { await createTemplateFromTournament(id, name) }}
+        onReplaceTemplate={async (templateId, tournamentId) => { await replaceTemplate(templateId, tournamentId) }}
         onNavigateEquipment={handleNavigateEquipment}
       />
     )

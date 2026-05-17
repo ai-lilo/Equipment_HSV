@@ -1,4 +1,4 @@
-import { Dog, Moon, Sun, LogOut, ShieldCheck, LayoutDashboard, DoorOpen, ShoppingCart, Trophy } from 'lucide-react'
+import { Dog, LogOut, ShieldCheck, LayoutDashboard, ShoppingCart, Trophy } from 'lucide-react'
 import type { User } from '../../types'
 
 interface Props {
@@ -6,8 +6,6 @@ interface Props {
   page: string
   onNavigate: (page: string) => void
   onLogout: () => void
-  darkMode: boolean
-  onToggleDark: () => void
 }
 
 const roleLabel: Record<string, string> = {
@@ -16,7 +14,7 @@ const roleLabel: Record<string, string> = {
   ADMIN: 'Admin',
 }
 
-export default function Header({ user, page, onNavigate, onLogout, darkMode, onToggleDark }: Props) {
+export default function Header({ user, page, onNavigate, onLogout }: Props) {
   return (
     <header className="bg-blue-50 dark:bg-gray-900 border-b border-blue-200 dark:border-gray-700 shadow-sm">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
@@ -28,12 +26,6 @@ export default function Header({ user, page, onNavigate, onLogout, darkMode, onT
             <LayoutDashboard size={16} />
             <span className="hidden sm:inline">Inventar</span>
           </NavBtn>
-          {(user.role === 'MEMBER' || user.role === 'ADMIN') && (
-            <NavBtn active={page === 'rooms'} onClick={() => onNavigate('rooms')}>
-              <DoorOpen size={16} />
-              <span className="hidden sm:inline">Räume</span>
-            </NavBtn>
-          )}
           {(user.role === 'MEMBER' || user.role === 'ADMIN') && (
             <NavBtn active={page === 'shopping-list'} onClick={() => onNavigate('shopping-list')}>
               <ShoppingCart size={16} />
@@ -56,13 +48,6 @@ export default function Header({ user, page, onNavigate, onLogout, darkMode, onT
           <span className="text-xs text-blue-600 dark:text-blue-200 hidden sm:block">
             {user.username} · {roleLabel[user.role]}
           </span>
-          <button
-            onClick={onToggleDark}
-            className="p-2 rounded-lg text-blue-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-white/10 transition-colors"
-            title={darkMode ? 'Hellmodus' : 'Dunkelmodus'}
-          >
-            {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
           <button
             onClick={onLogout}
             className="p-2 rounded-lg text-blue-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-white/10 transition-colors"

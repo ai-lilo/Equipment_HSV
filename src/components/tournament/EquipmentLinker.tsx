@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import type { Equipment } from '../../types'
-import { Search, X, ExternalLink } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 
 interface Props {
   taskId: string
@@ -9,13 +9,18 @@ interface Props {
   onNavigateEquipment?: () => void
 }
 
+interface EquipmentWithLocation extends Equipment {
+  room?: { name: string } | null
+  cabinet?: { name: string } | null
+}
+
 interface Link {
   id: string
   equipment_id: string
-  equipment: Equipment
+  equipment: EquipmentWithLocation
 }
 
-export default function EquipmentLinker({ taskId, readOnly, onNavigateEquipment }: Props) {
+export default function EquipmentLinker({ taskId, readOnly }: Props) {
   const [links, setLinks] = useState<Link[]>([])
   const [allEquipment, setAllEquipment] = useState<Equipment[]>([])
   const [search, setSearch] = useState('')
@@ -29,7 +34,7 @@ export default function EquipmentLinker({ taskId, readOnly, onNavigateEquipment 
   async function loadLinks() {
     const { data } = await supabase
       .from('task_equipment')
-      .select('id, equipment_id, equipment:equipment_id(*)')
+      .select('id, equipment_id, equipment:equipment_id(*, room:room_id(name), cabinet:cabinet_id(name))')
       .eq('task_id', taskId)
     setLinks((data ?? []) as unknown as Link[])
   }
@@ -59,34 +64,37 @@ export default function EquipmentLinker({ taskId, readOnly, onNavigateEquipment 
 
   if (links.length === 0 && readOnly) return null
 
+  function locationText(eq: EquipmentWithLocation): string {
+    if (!eq.room?.name) return ''
+    return eq.cabinet?.name ? `${eq.room.name} / ${eq.cabinet.name}` : eq.room.name
+  }
+
   return (
     <div className="mt-2">
       <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
         Benötigtes Equipment
       </div>
       <div className="space-y-1">
-        {links.map(link => (
-          <div key={link.id} className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg px-2 py-1">
-            <button
-              onClick={onNavigateEquipment}
-              className="flex-1 text-left text-blue-700 dark:text-blue-300 hover:underline flex items-center gap-1"
-            >
-              <ExternalLink size={12} />
-              {link.equipment?.name ?? '—'}
-            </button>
-            {link.equipment?.room_id && (
-              <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
-                {/* room/cabinet shown if joined – basic fallback */}
-                Lagerort wird im Inventar angezeigt
-              </span>
-            )}
-            {!readOnly && (
-              <button onClick={() => removeLink(link.id)} className="text-red-400 hover:text-red-600">
-                <X size={14} />
-              </button>
-            )}
-          </div>
-        ))}
+        {links.map(link => {
+          const loc = locationText(link.equipment)
+          return (
+            <div key={link.id} className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg px-2 py-1">
+              <div className="flex-1 min-w-0">
+                <span className="text-blue-700 dark:text-blue-300 font-medium">
+                  {link.equipment?.name ?? '—'}
+                </span>
+                {loc && (
+                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">📦 {loc}</span>
+                )}
+              </div>
+              {!readOnly && (
+                <button onClick={() => removeLink(link.id)} className="text-red-400 hover:text-red-600 shrink-0">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {!readOnly && (

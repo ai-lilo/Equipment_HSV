@@ -36,6 +36,7 @@ export default function TaskForm({ task, users, currentUser, onSave, onDelete, o
   const [dueDate, setDueDate] = useState(task?.due_date ?? '')
   const [notes, setNotes] = useState(task?.notes ?? '')
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     setTitle(task?.title ?? '')
@@ -140,7 +141,7 @@ export default function TaskForm({ task, users, currentUser, onSave, onDelete, o
               disabled={!canEditAll && !canEditOwn}
               rows={3}
               className={`${inputCls} resize-none`}
-              placeholder="Lagerort, Schranknummer, Hinweise..."
+              placeholder="Hinweise"
             />
           </div>
 
@@ -156,12 +157,30 @@ export default function TaskForm({ task, users, currentUser, onSave, onDelete, o
 
         <div className="flex gap-2 mt-5">
           {onDelete && canEditAll && (
-            <button
-              onClick={async () => { await onDelete(); onClose() }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 text-sm hover:bg-red-100"
-            >
-              <Trash2 size={15} /> Löschen
-            </button>
+            confirmDelete ? (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700">
+                <span className="text-xs text-red-700 dark:text-red-300">Wirklich löschen?</span>
+                <button
+                  onClick={async () => { await onDelete(); onClose() }}
+                  className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700"
+                >
+                  Ja
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300"
+                >
+                  Nein
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 text-sm hover:bg-red-100"
+              >
+                <Trash2 size={15} /> Löschen
+              </button>
+            )
           )}
           <div className="flex-1" />
           <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300">

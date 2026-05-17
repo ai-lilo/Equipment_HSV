@@ -1,29 +1,35 @@
 import { useState, useRef } from 'react'
 import { ArrowLeft, Plus, FileDown, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import type { User } from '../../types'
-import type { Tournament } from '../../types/tournament'
+import type { Tournament, TournamentTemplate } from '../../types/tournament'
 import { useTournamentDetail } from '../../hooks/useTournamentDetail'
 import { useAllUsers } from '../../hooks/useAllUsers'
 import DashboardTiles from './DashboardTiles'
 import CategorySection from './CategorySection'
 import NotesSection from './NotesSection'
 import TournamentTimeline from './TournamentTimeline'
-import { exportTournamentPDF } from '../../lib/tournamentPdf'
+import ChecklistTab from './ChecklistTab'
+import { exportTournamentPDF, type TaskEquipmentEntry } from '../../lib/tournamentPdf'
+import { supabase } from '../../lib/supabase'
 
 interface Props {
   tournament: Tournament
   currentUser: User
+  templates: TournamentTemplate[]
   onBack: () => void
   onArchive: (id: string) => Promise<void>
   onUnarchive: (id: string) => Promise<void>
   onDelete: (id: string) => Promise<void>
+  onCreateTemplate: (tournamentId: string, name: string) => Promise<void>
+  onReplaceTemplate: (templateId: string, tournamentId: string) => Promise<void>
   onNavigateEquipment: () => void
 }
 
-type InnerTab = 'aufgaben' | 'notizen' | 'kalender'
+type InnerTab = 'aufgaben' | 'notizen' | 'kalender' | 'checklisten'
+type ArchiveStep = 'choice' | 'new-name' | 'replace-pick' | 'replace-confirm'
 
 export default function TournamentDetail({
-  tournament, currentUser, onBack, onArchive, onUnarchive, onDelete, onNavigateEquipment
+  tournament, currentUser, templates, onBack, onArchive, onUnarchive, onDelete, onCreateTemplate, onReplaceTemplate, onNavigateEquipment
 }: Props) {
   const isAdmin = currentUser.role === 'ADMIN'
   const { categories, tasks, note, bestPractices, loading, addCategory, renameCategory, deleteCategory, reorderCategories, addTask, updateTask, deleteTask, saveNote } = useTournamentDetail(tournament.id)
@@ -34,6 +40,12 @@ export default function TournamentDetail({
   const [newCatName, setNewCatName] = useState('')
   const [showNewCat, setShowNewCat] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const [archiveDialog, setArchiveDialog] = useState(false)
+  const [archiveStep, setArchiveStep] = useState<ArchiveStep>('choice')
+  const [templateName, setTemplateName] = useState('')
+  const [selectedTemplateId, setSelectedTemplateId] = useState('')
+  const [archiving, setArchiving] = useState(false)
 
   const dragCatId = useRef<string | null>(null)
 
@@ -62,9 +74,10 @@ export default function TournamentDetail({
   const isArchived = tournament.archived
 
   const tabs: { key: InnerTab; label: string }[] = [
-    { key: 'aufgaben', label: 'Aufgaben' },
-    { key: 'notizen',  label: 'Notizen' },
-    { key: 'kalender', label: 'Kalender' },
+    { key: 'aufgaben',    label: 'Aufgaben' },
+    { key: 'notizen',     label: 'Notizen' },
+    { key: 'kalender',    label: 'Kalender' },
+    { key: 'checklisten', label: 'Checklisten' },
   ]
 
   return (
@@ -82,7 +95,21 @@ export default function TournamentDetail({
           {isAdmin && (
             <>
               <button
-                onClick={() => exportTournamentPDF(tournament, categories, tasks, users)}
+                onClick={async () => {
+                  const { data } = await supabase
+                    .from('task_equipment')
+                    .select('task_id, equipment:equipment_id(name, room:room_id(name), cabinet:cabinet_id(name))')
+                    .in('task_id', tasks.map(t => t.id))
+                  const map: Record<string, TaskEquipmentEntry[]> = {}
+                  for (const row of (data ?? []) as unknown as Array<{ task_id: string; equipment: { name: string; room?: { name: string } | null; cabinet?: { name: string } | null } }>) {
+                    const loc = row.equipment.cabinet?.name
+                      ? `${row.equipment.room?.name ?? ''} / ${row.equipment.cabinet.name}`
+                      : (row.equipment.room?.name ?? '')
+                    if (!map[row.task_id]) map[row.task_id] = []
+                    map[row.task_id].push({ name: row.equipment.name, location: loc })
+                  }
+                  exportTournamentPDF(tournament, categories, tasks, users, map)
+                }}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                 title="PDF exportieren"
               >
@@ -99,7 +126,7 @@ export default function TournamentDetail({
                 </button>
               ) : (
                 <button
-                  onClick={() => onArchive(tournament.id)}
+                  onClick={() => { setTemplateName(tournament.name); setArchiveStep('choice'); setArchiveDialog(true) }}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                   title="Archivieren"
                 >
@@ -251,6 +278,136 @@ export default function TournamentDetail({
         ) : (
           <TournamentTimeline tasks={tasks} categories={categories} users={users} />
         )
+      )}
+
+      {/* CHECKLISTEN */}
+      {innerTab === 'checklisten' && (
+        loading ? (
+          <div className="text-center py-8 text-gray-400">Lädt...</div>
+        ) : (
+          <ChecklistTab
+            tournamentName={tournament.name}
+            categories={categories}
+            tasks={tasks}
+            onUpdateTask={updateTask}
+          />
+        )
+      )}
+
+      {/* ARCHIVIEREN-DIALOG */}
+      {archiveDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm p-5 shadow-xl">
+            {archiveStep === 'choice' && (
+              <>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Turnier archivieren</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Möchtest du dieses Turnier auch als Vorlage speichern?</p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={async () => { setArchiving(true); await onArchive(tournament.id); setArchiveDialog(false); setArchiving(false) }}
+                    disabled={archiving}
+                    className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                  >
+                    Nur archivieren
+                  </button>
+                  <button
+                    onClick={() => setArchiveStep('new-name')}
+                    className="px-4 py-2 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900"
+                  >
+                    Neue Vorlage anlegen
+                  </button>
+                  {templates.length > 0 && (
+                    <button
+                      onClick={() => { setSelectedTemplateId(templates[0].id); setArchiveStep('replace-pick') }}
+                      className="px-4 py-2 rounded-lg border border-orange-300 text-orange-700 dark:text-orange-300 dark:border-orange-700 text-sm hover:bg-orange-50 dark:hover:bg-orange-950/20"
+                    >
+                      Bestehende Vorlage ersetzen
+                    </button>
+                  )}
+                  <button onClick={() => setArchiveDialog(false)} className="text-xs text-gray-400 hover:text-gray-600 mt-1">Abbrechen</button>
+                </div>
+              </>
+            )}
+
+            {archiveStep === 'new-name' && (
+              <>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Neue Vorlage anlegen</h3>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Vorlagenname</label>
+                <input
+                  autoFocus
+                  value={templateName}
+                  onChange={e => setTemplateName(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setArchiveStep('choice')} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300">Zurück</button>
+                  <button
+                    onClick={async () => {
+                      if (!templateName.trim()) return
+                      setArchiving(true)
+                      await onCreateTemplate(tournament.id, templateName.trim())
+                      await onArchive(tournament.id)
+                      setArchiveDialog(false)
+                      setArchiving(false)
+                    }}
+                    disabled={archiving || !templateName.trim()}
+                    className="px-4 py-2 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900 disabled:opacity-50"
+                  >
+                    {archiving ? 'Wird gespeichert…' : 'Anlegen & archivieren'}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {archiveStep === 'replace-pick' && (
+              <>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Vorlage ersetzen</h3>
+                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Welche Vorlage ersetzen?</label>
+                <select
+                  value={selectedTemplateId}
+                  onChange={e => setSelectedTemplateId(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white mb-4"
+                >
+                  {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setArchiveStep('choice')} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300">Zurück</button>
+                  <button
+                    onClick={() => setArchiveStep('replace-confirm')}
+                    className="px-4 py-2 rounded-lg bg-orange-600 text-white text-sm hover:bg-orange-700"
+                  >
+                    Weiter
+                  </button>
+                </div>
+              </>
+            )}
+
+            {archiveStep === 'replace-confirm' && (
+              <>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Wirklich ersetzen?</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                  Die Vorlage „{templates.find(t => t.id === selectedTemplateId)?.name}" wird unwiderruflich überschrieben.
+                </p>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setArchiveStep('replace-pick')} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300">Zurück</button>
+                  <button
+                    onClick={async () => {
+                      setArchiving(true)
+                      await onReplaceTemplate(selectedTemplateId, tournament.id)
+                      await onArchive(tournament.id)
+                      setArchiveDialog(false)
+                      setArchiving(false)
+                    }}
+                    disabled={archiving}
+                    className="px-4 py-2 rounded-lg bg-orange-600 text-white text-sm hover:bg-orange-700 disabled:opacity-50"
+                  >
+                    {archiving ? 'Wird gespeichert…' : 'Ersetzen & archivieren'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
