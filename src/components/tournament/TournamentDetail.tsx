@@ -36,6 +36,10 @@ export default function TournamentDetail({
   const { categories, tasks, note, bestPractices, loading, addCategory, addChecklistCategory, renameCategory, deleteCategory, reorderCategories, addTask, updateTask, deleteTask, saveNote } = useTournamentDetail(tournament.id)
   const users = useAllUsers()
 
+  const taskCategories = categories.filter(c => !c.is_checklist)
+  const taskCategoryIds = new Set(taskCategories.map(c => c.id))
+  const aufgabenTasks = tasks.filter(t => taskCategoryIds.has(t.category_id))
+
   const [innerTab, setInnerTab] = useState<InnerTab>('aufgaben')
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [newCatName, setNewCatName] = useState('')
@@ -61,7 +65,7 @@ export default function TournamentDetail({
   async function handleDrop(_e: React.DragEvent, targetId: string) {
     const srcId = dragCatId.current
     if (!srcId || srcId === targetId) return
-    const ids = categories.map(c => c.id)
+    const ids = taskCategories.map(c => c.id)
     const srcIdx = ids.indexOf(srcId)
     const tgtIdx = ids.indexOf(targetId)
     const reordered = [...ids]
@@ -166,10 +170,10 @@ export default function TournamentDetail({
             <div className="text-center py-8 text-gray-400 dark:text-gray-500">Lädt...</div>
           ) : (
             <>
-              <DashboardTiles tasks={tasks} activeFilter={statusFilter} onFilter={setStatusFilter} />
+              <DashboardTiles tasks={aufgabenTasks} activeFilter={statusFilter} onFilter={setStatusFilter} />
 
               <div className="space-y-3">
-                {categories.map(cat => (
+                {taskCategories.map(cat => (
                   <CategorySection
                     key={cat.id}
                     category={cat}
@@ -190,7 +194,7 @@ export default function TournamentDetail({
                   />
                 ))}
 
-                {categories.length === 0 && (
+                {taskCategories.length === 0 && (
                   <div className="text-center py-8 text-gray-400 dark:text-gray-500">
                     <p className="text-sm">Noch keine Kategorien vorhanden.</p>
                     {isAdmin && <p className="text-xs mt-1">Füge unten eine Kategorie hinzu.</p>}
