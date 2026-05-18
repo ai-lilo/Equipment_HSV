@@ -57,12 +57,12 @@ export default function Tournament({ user, onNavigate }: Props) {
     <div className="max-w-5xl mx-auto px-4 py-6">
       {/* Page header */}
       <div className="flex items-center gap-3 mb-6">
-        <Trophy size={24} className="text-blue-800 dark:text-blue-400 shrink-0" />
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Veranstaltungs-Organisation</h1>
+        <Trophy size={24} className="text-navy-700 shrink-0" />
+        <h1 className="text-xl font-bold text-gray-900">Veranstaltungs-Organisation</h1>
         {isAdmin && (
           <button
             onClick={() => setShowForm(true)}
-            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900"
+            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-lg bg-navy-700 text-white text-sm hover:bg-navy-800"
           >
             <Plus size={16} /> Veranstaltung anlegen
           </button>
@@ -77,8 +77,8 @@ export default function Tournament({ user, onNavigate }: Props) {
             onClick={() => setMainTab(key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               mainTab === key
-                ? 'border-blue-700 text-blue-700 dark:text-blue-400 dark:border-blue-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                ? 'border-navy-700 text-navy-700'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
             {label}
@@ -208,17 +208,17 @@ function TournamentCard({ tournament, onClick, archived }: { tournament: Tournam
   return (
     <button
       onClick={onClick}
-      className="w-full text-left bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm transition-all group"
+      className="w-full text-left bg-white border border-gray-200 rounded-xl px-4 py-3.5 hover:border-navy-200 hover:shadow-sm transition-all group"
     >
       <div className="flex items-center gap-3">
-        <div className={`w-2 h-2 rounded-full shrink-0 ${archived ? 'bg-gray-300 dark:bg-gray-600' : 'bg-blue-500'}`} />
+        <div className={`w-2 h-2 rounded-full shrink-0 ${archived ? 'bg-gray-300' : 'bg-navy-600'}`} />
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 dark:text-white text-sm group-hover:text-blue-700 dark:group-hover:text-blue-300 truncate">
+          <p className="font-semibold text-gray-900 text-sm group-hover:text-navy-700 truncate">
             {tournament.name}
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">📅 {dateStr}</p>
+          <p className="text-xs text-gray-500 mt-0.5">📅 {dateStr}</p>
         </div>
-        <ChevronRight size={16} className="text-gray-400 dark:text-gray-500 group-hover:text-blue-600 shrink-0" />
+        <ChevronRight size={16} className="text-gray-400 group-hover:text-navy-600 shrink-0" />
       </div>
     </button>
   )

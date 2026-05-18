@@ -58,10 +58,10 @@ export default function ShoppingList({ user }: Props) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="flex items-center gap-2 mb-6">
-        <ShoppingCart size={22} className="text-blue-700 dark:text-blue-400" />
-        <h1 className="text-xl font-bold text-gray-900 dark:text-white">Einkaufsliste</h1>
+        <ShoppingCart size={22} className="text-navy-700" />
+        <h1 className="text-xl font-bold text-gray-900">Einkaufsliste</h1>
         {openItems.length > 0 && (
-          <span className="ml-1 text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 px-2 py-0.5 rounded-full">
+          <span className="ml-1 text-xs font-bold bg-navy-100 text-navy-700 px-2 py-0.5 rounded-full">
             {openItems.length} offen
           </span>
         )}
@@ -77,7 +77,7 @@ export default function ShoppingList({ user }: Props) {
 
       {openItems.length > 0 && (
         <section className="mb-6">
-          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Offen</h2>
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Offen</h2>
           <div className="space-y-2">
             {openItems.map(item => (
               <ShoppingListRow
@@ -95,7 +95,7 @@ export default function ShoppingList({ user }: Props) {
 
       {boughtItems.length > 0 && (
         <section>
-          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Gekauft</h2>
+          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Gekauft</h2>
           <div className="space-y-2 opacity-60">
             {boughtItems.map(item => (
               <ShoppingListRow
@@ -125,15 +125,15 @@ function ShoppingListRow({ item, onMarkBought, onMarkOpen, onDelete, canDelete }
   return (
     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
       isBought
-        ? 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
-        : 'border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-800'
+        ? 'border-gray-100 bg-gray-50'
+        : 'border-navy-100 bg-white'
     }`}>
       <button
         onClick={isBought ? onMarkOpen : onMarkBought}
         className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
           isBought
             ? 'border-green-500 bg-green-500 text-white'
-            : 'border-gray-300 dark:border-gray-500 hover:border-green-500'
+            : 'border-gray-300 hover:border-green-500'
         }`}
         title={isBought ? 'Als offen markieren' : 'Als gekauft markieren'}
       >
@@ -141,7 +141,7 @@ function ShoppingListRow({ item, onMarkBought, onMarkOpen, onDelete, canDelete }
       </button>
 
       <div className="flex-1 min-w-0">
-        <p className={`font-medium text-gray-900 dark:text-white ${isBought ? 'line-through text-gray-400 dark:text-gray-500' : ''}`}>
+        <p className={`font-medium text-gray-900 ${isBought ? 'line-through text-gray-400' : ''}`}>
           {item.equipment?.name ?? '—'}
         </p>
         {item.equipment?.description && (

@@ -14,7 +14,7 @@ export default function Admin({ user }: Props) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Admin</h1>
+      <h1 className="text-xl font-bold text-gray-900 mb-4">Admin</h1>
 
       <div className="flex gap-2 mb-6 flex-wrap">
         <TabBtn active={tab === 'users'} onClick={() => setTab('users')}>
@@ -52,7 +52,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
     <button
       onClick={onClick}
       className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-        active ? 'bg-blue-800 text-white' : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+        active ? 'bg-navy-700 text-white' : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
       }`}
     >
       {children}
@@ -101,12 +101,12 @@ function UsersTab() {
           value={newUsername}
           onChange={e => setNewUsername(e.target.value)}
           placeholder="Neuer Benutzername"
-          className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-navy-700"
         />
         <select
           value={newRole}
           onChange={e => setNewRole(e.target.value as 'VISITOR' | 'MEMBER' | 'ADMIN')}
-          className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-navy-700"
         >
           <option value="VISITOR">Mitglied</option>
           <option value="MEMBER">Vorstandschaft</option>
@@ -115,7 +115,7 @@ function UsersTab() {
         <button
           onClick={addUser}
           disabled={saving || !newUsername.trim()}
-          className="px-4 py-2 bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+          className="px-4 py-2 bg-navy-700 hover:bg-navy-800 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
         >
           Hinzufügen
         </button>
@@ -123,26 +123,29 @@ function UsersTab() {
 
       <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-900">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Benutzername</th>
-              <th className="text-left px-4 py-3 text-gray-600 dark:text-gray-300 font-medium">Rolle</th>
+              <th className="text-left px-4 py-3 text-gray-600 font-medium">Benutzername</th>
+              <th className="text-left px-4 py-3 text-gray-600 font-medium">Rolle</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+          <tbody className="divide-y divide-gray-100">
             {users.map(u => (
-              <tr key={u.id} className="bg-white dark:bg-gray-800">
-                <td className="px-4 py-3 text-gray-900 dark:text-white">{u.username}</td>
+              <tr key={u.id} className="bg-white">
+                <td className="px-4 py-3 text-gray-900">{u.username}</td>
                 <td className="px-4 py-3">
-                  <select
-                    value={u.role}
-                    onChange={e => changeRole(u.id, e.target.value as 'VISITOR' | 'MEMBER' | 'ADMIN')}
-                    className="border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-xs text-gray-900 dark:text-white dark:bg-gray-700"
-                  >
-                    <option value="VISITOR">Besucher</option>
-                    <option value="MEMBER">Mitglied</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
+                  <div className="flex items-center gap-2">
+                    <RoleBadge role={u.role} />
+                    <select
+                      value={u.role}
+                      onChange={e => changeRole(u.id, e.target.value as 'VISITOR' | 'MEMBER' | 'ADMIN')}
+                      className="border border-gray-200 rounded px-2 py-1 text-xs text-gray-700"
+                    >
+                      <option value="VISITOR">Mitglied</option>
+                      <option value="MEMBER">Vorstandschaft</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -309,7 +312,7 @@ function PdfTab() {
     <div>
       <button
         onClick={handlePrint}
-        className="mb-4 flex items-center gap-2 bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+        className="mb-4 flex items-center gap-2 bg-navy-700 hover:bg-navy-800 text-white px-4 py-2 rounded-lg font-medium transition-colors"
       >
         <FileDown size={16} /> Als PDF drucken
       </button>
@@ -347,7 +350,7 @@ function PdfTab() {
   )
 }
 
-const inputCls = 'border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600'
+const inputCls = 'border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-navy-700'
 
 function CategoriesTab() {
   const { categories, loading, addCategory, renameCategory, deleteCategory } = useCategories()
@@ -397,7 +400,7 @@ function CategoriesTab() {
         <button
           onClick={handleAdd}
           disabled={saving || !newName.trim()}
-          className="px-4 py-2 bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+          className="px-4 py-2 bg-navy-700 hover:bg-navy-800 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
         >
           Hinzufügen
         </button>
@@ -439,7 +442,7 @@ function CategoriesTab() {
                         <button onClick={() => handleRename(cat.id)} className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded" title="Speichern">
                           <Check size={15} />
                         </button>
-                        <button onClick={() => setEditingId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded" title="Abbrechen">
+                        <button onClick={() => setEditingId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded" title="Abbrechen">
                           <X size={15} />
                         </button>
                       </>
@@ -447,7 +450,7 @@ function CategoriesTab() {
                       <>
                         <button
                           onClick={() => { setEditingId(cat.id); setEditingName(cat.name) }}
-                          className="p-1.5 text-gray-400 hover:text-blue-700 dark:hover:text-blue-400 rounded"
+                          className="p-1.5 text-gray-400 hover:text-navy-700 rounded"
                           title="Umbenennen"
                         >
                           <Pencil size={15} />
@@ -483,8 +486,8 @@ function DatenschutzTab() {
 
   return (
     <div className="max-w-2xl space-y-1">
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-3 mb-6">
-        <p className="text-sm text-blue-800 dark:text-blue-300">
+      <div className="bg-navy-50 border border-navy-100 rounded-xl px-4 py-3 mb-6">
+        <p className="text-sm text-navy-700">
           Diese Datenschutzerklärung beschreibt, welche Daten in der Inventar-App des HSV Pegnitz gespeichert werden,
           wo sie liegen und wer Zugriff hat.
         </p>
@@ -563,9 +566,24 @@ function DatenschutzTab() {
         <h2 className={h2Cls}>Kontakt</h2>
         <p className={pCls}>
           Bei Fragen zum Datenschutz oder zur Löschung von Daten wende dich an:<br />
-          <strong>Sabine Neupert</strong> · <a href="mailto:neupert.sabine@outlook.com" className="text-blue-700 dark:text-blue-400 underline">neupert.sabine@outlook.com</a>
+          <strong>Sabine Neupert</strong> · <a href="mailto:neupert.sabine@outlook.com" className="text-navy-700 underline">neupert.sabine@outlook.com</a>
         </p>
       </div>
     </div>
+  )
+}
+
+const roleBadgeConfig: Record<string, { label: string; cls: string }> = {
+  ADMIN:   { label: 'Admin',         cls: 'bg-orange-100 text-orange-700' },
+  MEMBER:  { label: 'Vorstandschaft', cls: 'bg-teal-100 text-teal-700' },
+  VISITOR: { label: 'Mitglied',      cls: 'bg-gray-100 text-gray-600' },
+}
+
+function RoleBadge({ role }: { role: string }) {
+  const cfg = roleBadgeConfig[role] ?? { label: role, cls: 'bg-gray-100 text-gray-600' }
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${cfg.cls}`}>
+      {cfg.label}
+    </span>
   )
 }

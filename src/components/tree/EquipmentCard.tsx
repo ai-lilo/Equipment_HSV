@@ -87,8 +87,8 @@ export default function EquipmentCard({ item, canEdit, categories, openShoppingI
                 onClick={handleCartClick}
                 className={`p-1.5 rounded transition-colors ${
                   isOnList || feedback !== null
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                    ? 'text-navy-700'
+                    : 'text-gray-400 hover:text-navy-700'
                 }`}
                 title="Auf Einkaufsliste"
               >
@@ -98,7 +98,7 @@ export default function EquipmentCard({ item, canEdit, categories, openShoppingI
             {canEdit && (
               <button
                 onClick={() => onEdit(item)}
-                className="p-1.5 text-gray-400 hover:text-blue-700 dark:hover:text-blue-400 rounded transition-colors"
+                className="p-1.5 text-gray-400 hover:text-navy-700 rounded transition-colors"
                 title="Bearbeiten"
               >
                 <Pencil size={16} />
@@ -106,7 +106,7 @@ export default function EquipmentCard({ item, canEdit, categories, openShoppingI
             )}
           </div>
           {feedback && (
-            <span className={`text-xs ${feedback === 'added' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`}>
+            <span className={`text-xs ${feedback === 'added' ? 'text-navy-700' : 'text-gray-400'}`}>
               {feedback === 'added' ? '✓ Hinzugefügt' : 'Bereits auf der Liste'}
             </span>
           )}

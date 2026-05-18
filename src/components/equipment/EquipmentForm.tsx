@@ -221,7 +221,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
                   type="checkbox"
                   checked={isConsumable}
                   onChange={e => setIsConsumable(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-700 focus:ring-blue-600"
+                  className="w-4 h-4 rounded border-gray-300 text-navy-700 focus:ring-navy-700"
                 />
                 Verbrauchsmaterial (wird auf Einkaufsliste angezeigt)
               </label>
@@ -246,7 +246,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
                     onClick={() => setStatus(s)}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
                       status === s
-                        ? s === 'OK' ? 'bg-blue-800 text-white border-blue-800'
+                        ? s === 'OK' ? 'bg-navy-700 text-white border-navy-700'
                           : s === 'DEFECT' ? 'bg-red-600 text-white border-red-600'
                           : 'bg-yellow-500 text-white border-yellow-500'
                         : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -291,7 +291,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 hover:border-blue-500 hover:text-blue-700 transition-colors"
+                  className="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-navy-700 hover:text-navy-700 transition-colors"
                 >
                   <div className="flex gap-3">
                     <Camera size={22} />
@@ -330,7 +330,7 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white font-semibold transition-colors"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-navy-700 hover:bg-navy-800 disabled:opacity-50 text-white font-semibold transition-colors"
               >
                 <Save size={16} />
                 {saving ? 'Speichern…' : 'Speichern'}
@@ -361,4 +361,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600'
+const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-navy-700'

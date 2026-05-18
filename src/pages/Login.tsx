@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react'
-import { Dog, LogIn } from 'lucide-react'
+import { LogIn } from 'lucide-react'
 
 interface Props {
   onLogin: (username: string) => Promise<void>
@@ -17,21 +17,23 @@ export default function Login({ onLogin, error, loading }: Props) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-navy-700 px-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-blue-800 text-white rounded-full p-4 mb-4">
-            <Dog size={40} />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white text-center">
-            HSV Pegnitz
+          <img
+            src={`${import.meta.env.BASE_URL}logo.png`}
+            alt="HSV Pegnitz 03 e.V."
+            className="h-24 w-24 object-contain mb-4"
+          />
+          <h1 className="text-3xl font-bold italic text-white text-center">
+            Willkommen am Platz!
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Inventarverwaltung</p>
+          <p className="text-navy-100 text-sm mt-2">HSV Pegnitz 03 e.V. · Inventarverwaltung</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-2xl shadow p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Benutzername
             </label>
             <input
@@ -40,25 +42,25 @@ export default function Login({ onLogin, error, loading }: Props) {
               onChange={e => setUsername(e.target.value)}
               placeholder="Dein Benutzername"
               autoFocus
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-navy-700"
             />
           </div>
 
           {error && (
-            <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+            <p className="text-red-600 text-sm">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading || !username.trim()}
-            className="w-full flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-navy-700 hover:bg-navy-800 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors"
           >
             <LogIn size={18} />
             {loading ? 'Anmelden…' : 'Anmelden'}
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
+        <p className="text-center text-xs text-navy-100 mt-4">
           Kein Passwort nötig — Benutzername reicht aus
         </p>
       </div>

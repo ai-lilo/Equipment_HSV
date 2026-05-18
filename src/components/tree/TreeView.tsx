@@ -88,10 +88,10 @@ function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, o
     <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+        className="w-full flex items-center gap-2 px-4 py-3 bg-cream-100 hover:bg-cream-50 transition-colors text-left"
       >
         {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-        <DoorOpen size={18} className="text-blue-600 dark:text-blue-400" />
+        <DoorOpen size={18} className="text-navy-700" />
         <span className="font-semibold text-gray-900 dark:text-white">{room.name}</span>
         <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{totalInRoom} Artikel</span>
       </button>
@@ -147,7 +147,7 @@ function CabinetNode({ cabinet, items, categories, canEdit, openShoppingIds, onE
         className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors text-left"
       >
         {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        <ArchiveX size={16} className="text-blue-500" />
+        <ArchiveX size={16} className="text-navy-600" />
         <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{cabinet.name}</span>
         <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{items.length}</span>
       </button>

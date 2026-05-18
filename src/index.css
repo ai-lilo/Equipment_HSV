@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+body {
+  font-family: 'Manrope', sans-serif;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+@theme {
+  --color-navy-50: #eef1f8;
+  --color-navy-100: #d4dcee;
+  --color-navy-200: #aab8dd;
+  --color-navy-600: #243b80;
+  --color-navy-700: #1e3464;
+  --color-navy-800: #182a50;
+  --color-navy-900: #12203c;
+  --color-cream-50: #f0e8d8;
+  --color-cream-100: #e8dcc8;
+}
