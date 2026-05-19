@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Tournament, TournamentTemplate, TournamentCategory, TournamentTask } from '../types/tournament'
+import type { Tournament, TournamentTemplate, TournamentCategory, TournamentTask, TournamentHelper } from '../types/tournament'
 
 export function useTournaments() {
   const [tournaments, setTournaments] = useState<Tournament[]>([])
@@ -48,7 +48,7 @@ export function useTournaments() {
     const template = templates.find(t => t.id === templateId)
     if (!template?.source_tournament_id) return
 
-    const [cats, tasks] = await Promise.all([
+    const [cats, tasks, hlp] = await Promise.all([
       supabase
         .from('tournament_categories')
         .select('*')
@@ -57,10 +57,16 @@ export function useTournaments() {
       supabase
         .from('tasks')
         .select('*'),
+      supabase
+        .from('tournament_helpers')
+        .select('*')
+        .eq('tournament_id', template.source_tournament_id)
+        .order('sort_order'),
     ])
 
     const srcCategories = (cats.data ?? []) as TournamentCategory[]
     const allTasks = (tasks.data ?? []) as TournamentTask[]
+    const srcHelpers = (hlp.data ?? []) as TournamentHelper[]
 
     for (const cat of srcCategories) {
       const { data: newCat } = await supabase
@@ -82,20 +88,39 @@ export function useTournaments() {
         }))
       )
     }
+
+    if (srcHelpers.length > 0) {
+      await supabase.from('tournament_helpers').insert(
+        srcHelpers.map(h => ({
+          tournament_id: newTournamentId,
+          member_id: null,
+          role: h.role,
+          time_start: h.time_start,
+          time_end: h.time_end,
+          sort_order: h.sort_order,
+        }))
+      )
+    }
   }
 
   async function buildTemplateFromTournament(sourceTournamentId: string): Promise<string | null> {
-    const [cats, allTasksRes] = await Promise.all([
+    const [cats, allTasksRes, hlp] = await Promise.all([
       supabase
         .from('tournament_categories')
         .select('*')
         .eq('tournament_id', sourceTournamentId)
         .order('sort_order'),
       supabase.from('tasks').select('*'),
+      supabase
+        .from('tournament_helpers')
+        .select('*')
+        .eq('tournament_id', sourceTournamentId)
+        .order('sort_order'),
     ])
 
     const srcCats = (cats.data ?? []) as TournamentCategory[]
     const allTasks = (allTasksRes.data ?? []) as TournamentTask[]
+    const srcHelpers = (hlp.data ?? []) as TournamentHelper[]
 
     const { data: tmplTournament } = await supabase
       .from('tournaments')
@@ -122,6 +147,19 @@ export function useTournaments() {
           category_id: (newCat as TournamentCategory).id,
           title: t.title,
           status: 'nicht_begonnen',
+        }))
+      )
+    }
+
+    if (srcHelpers.length > 0) {
+      await supabase.from('tournament_helpers').insert(
+        srcHelpers.map(h => ({
+          tournament_id: tmplId,
+          member_id: null,
+          role: h.role,
+          time_start: h.time_start,
+          time_end: h.time_end,
+          sort_order: h.sort_order,
         }))
       )
     }
@@ -200,5 +238,10 @@ export function useTournaments() {
     await load()
   }
 
-  return { tournaments, templates, loading, load, createTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate, restoreTemplate }
+  async function updateTournament(id: string, name: string, date: string) {
+    await supabase.from('tournaments').update({ name, date }).eq('id', id)
+    setTournaments(prev => prev.map(t => t.id === id ? { ...t, name, date } : t))
+  }
+
+  return { tournaments, templates, loading, load, createTournament, updateTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate, restoreTemplate }
 }

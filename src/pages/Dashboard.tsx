@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search, Plus, EyeOff, Eye, Filter, FileDown } from 'lucide-react'
+import { Search, Plus, FileDown } from 'lucide-react'
 import TreeView from '../components/tree/TreeView'
 import EquipmentForm from '../components/equipment/EquipmentForm'
 import StatusOverview from '../components/ui/StatusOverview'
@@ -21,7 +21,6 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
   const [search, setSearch] = useState('')
   const [filterRoom, setFilterRoom] = useState(initRoom ?? '')
   const [filterCategory, setFilterCategory] = useState('')
-  const [hideEmpty, setHideEmpty] = useState(false)
   const [editItem, setEditItem] = useState<Equipment | null | 'new'>(null)
   const [openShoppingIds, setOpenShoppingIds] = useState<Set<string>>(new Set())
 
@@ -49,103 +48,76 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
     return 'added'
   }
 
+  const totalCount = equipment.length
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      {!loading && (
-        <StatusOverview
-          equipment={equipment}
-          rooms={rooms}
-          cabinets={cabinets}
-          onEditEquipment={canEdit ? setEditItem : () => {}}
-        />
-      )}
-
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Suche nach Equipment, Raum, Kategorie…"
-            className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-navy-700"
-          />
-        </div>
-
-        <div className="flex gap-2 flex-wrap">
-          <select
-            value={filterRoom}
-            onChange={e => setFilterRoom(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2.5 bg-white text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-navy-700"
-          >
-            <option value="">Alle Räume</option>
-            {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
-
-          <div className="flex gap-2 overflow-x-auto pb-0.5 shrink-0 max-w-full">
-            <button
-              onClick={() => setFilterCategory('')}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                filterCategory === ''
-                  ? 'bg-navy-700 text-white border-navy-700'
-                  : 'bg-white text-gray-700 border-gray-300 hover:border-navy-700'
-              }`}
-            >
-              Alle
-            </button>
-            {categories.filter(c => c.name !== 'Verbrauchsmaterial').map(c => (
-              <button
-                key={c.id}
-                onClick={() => setFilterCategory(filterCategory === c.id ? '' : c.id)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                  filterCategory === c.id
-                    ? 'bg-navy-700 text-white border-navy-700'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-navy-700'
-                }`}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => setHideEmpty(h => !h)}
-            title={hideEmpty ? 'Leere Räume anzeigen' : 'Leere Räume ausblenden'}
-            className="p-2.5 border border-gray-300 rounded-lg bg-white text-gray-500 hover:text-navy-700 transition-colors"
-          >
-            {hideEmpty ? <Eye size={18} /> : <EyeOff size={18} />}
-          </button>
-
-          {(filterRoom || filterCategory || search) && (
-            <button
-              onClick={() => { setFilterRoom(''); setFilterCategory(''); setSearch('') }}
-              className="p-2.5 border border-gray-300 rounded-lg bg-white text-gray-500 hover:text-red-600 transition-colors"
-              title="Filter zurücksetzen"
-            >
-              <Filter size={18} />
-            </button>
-          )}
-        </div>
+    <div className="max-w-5xl mx-auto px-4 pt-6 pb-10">
+      <div className="mb-6">
+        <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-1">Vereins-Inventar</p>
+        <h1 className="text-3xl font-bold text-navy-900" style={{ fontFamily: "'Lora', serif" }}>
+          Inventar <em>überblicken</em>
+        </h1>
+        {!loading && (
+          <p className="text-sm text-gray-400 mt-2">
+            {rooms.length} Räume · {cabinets.length} Schränke · {totalCount} Geräte
+          </p>
+        )}
       </div>
 
-      <div className="flex items-center gap-3 mb-4">
+      {!loading && (
+        <StatusOverview equipment={equipment} />
+      )}
+
+      <div className="relative mb-3">
+        <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Inventar suchen ..."
+          className="w-full pl-11 pr-4 py-3 rounded-xl bg-white border-0 shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-navy-700"
+        />
+      </div>
+
+      <div className="flex gap-2 mb-4">
+        <select
+          value={filterRoom}
+          onChange={e => setFilterRoom(e.target.value)}
+          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-navy-700"
+        >
+          <option value="">Alle Räume</option>
+          {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+        </select>
+        <select
+          value={filterCategory}
+          onChange={e => setFilterCategory(e.target.value)}
+          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-navy-700"
+        >
+          <option value="">Alle Kategorien</option>
+          {categories.filter(c => c.name !== 'Verbrauchsmaterial').map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex gap-3 mb-6">
         {canEdit && (
           <button
             onClick={() => setEditItem('new')}
-            className="flex items-center gap-2 bg-navy-700 hover:bg-navy-800 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 bg-navy-700 hover:bg-navy-800 text-white py-3 rounded-xl font-semibold transition-colors"
           >
             <Plus size={18} />
-            Equipment hinzufügen
+            Inventar hinzufügen
           </button>
         )}
         {!loading && (
           <button
             onClick={() => exportInventoryPDF(rooms, cabinets, equipment, categories)}
-            className="flex items-center gap-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg font-medium transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 py-3 rounded-xl font-medium transition-colors"
             title="Inventarliste als PDF exportieren"
           >
             <FileDown size={18} />
-            <span className="hidden sm:inline">PDF exportieren</span>
+            PDF
           </button>
         )}
       </div>
@@ -162,7 +134,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
           searchQuery={search}
           filterRoom={filterRoom}
           filterCategory={filterCategory}
-          hideEmpty={hideEmpty}
+          hideEmpty={false}
           openShoppingIds={openShoppingIds}
           onEditEquipment={setEditItem}
           onAddToShoppingList={canEdit ? handleAddToShoppingList : undefined}

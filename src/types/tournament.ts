@@ -57,3 +57,22 @@ export interface TaskEquipmentLink {
   task_id: string
   equipment_id: string
 }
+
+export interface ClubMember {
+  id: string
+  name: string
+  active: boolean
+  created_at: string
+}
+
+export interface TournamentHelper {
+  id: string
+  tournament_id: string
+  member_id: string | null
+  member?: { id: string; name: string } | null
+  role: string | null
+  time_start: string | null
+  time_end: string | null
+  sort_order: number
+  created_at: string
+}

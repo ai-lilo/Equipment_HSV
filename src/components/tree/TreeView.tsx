@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, DoorOpen, ArchiveX, Package } from 'lucide-react'
+import { ChevronDown, ChevronRight, Home, ArchiveX, Package } from 'lucide-react'
 import EquipmentCard from './EquipmentCard'
 import type { Room, Cabinet, Equipment, User, Category } from '../../types'
 
@@ -44,7 +44,7 @@ export default function TreeView({
   const filteredRooms = filterRoom ? rooms.filter(r => r.id === filterRoom) : rooms
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {filteredRooms.map(room => (
         <RoomNode
           key={room.id}
@@ -60,7 +60,7 @@ export default function TreeView({
         />
       ))}
       {filteredRooms.length === 0 && (
-        <p className="text-center text-gray-400 dark:text-gray-500 py-8">Keine Räume vorhanden.</p>
+        <p className="text-center text-gray-400 py-8">Keine Räume vorhanden.</p>
       )}
     </div>
   )
@@ -82,29 +82,41 @@ function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, o
   const cabinetItems = (cab: Cabinet) => equipment.filter(e => e.cabinet_id === cab.id)
 
   const totalInRoom = equipment.filter(e => e.room_id === room.id).length
+  const totalCount = equipment.filter(e => e.room_id === room.id).reduce((s, e) => s + e.count, 0)
   if (hideEmpty && totalInRoom === 0) return null
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <div>
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-2 px-4 py-3 bg-cream-100 hover:bg-cream-50 transition-colors text-left"
+        className="w-full flex items-center gap-3 py-3 text-left"
       >
-        {open ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-        <DoorOpen size={18} className="text-navy-700" />
-        <span className="font-semibold text-gray-900 dark:text-white">{room.name}</span>
-        <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{totalInRoom} Artikel</span>
+        {open
+          ? <ChevronDown size={18} className="text-gray-400 shrink-0" />
+          : <ChevronRight size={18} className="text-gray-400 shrink-0" />
+        }
+        <span className="w-8 h-8 rounded-full bg-cream-100 flex items-center justify-center shrink-0">
+          <Home size={15} className="text-navy-700" />
+        </span>
+        <span className="font-bold text-xl text-navy-900">{room.name}</span>
+        <span className="ml-auto text-sm text-gray-400 shrink-0">
+          {cabinets.length} Schränke · {totalCount} Stk.
+        </span>
       </button>
 
       {open && (
-        <div className="px-3 py-2 space-y-2 bg-white dark:bg-gray-850">
-          {directItems.map(item => (
-            <EquipmentCard
-              key={item.id} item={item} canEdit={canEdit} categories={categories}
-              openShoppingIds={openShoppingIds}
-              onEdit={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
-            />
-          ))}
+        <div className="space-y-3">
+          {directItems.length > 0 && (
+            <div className="grid grid-cols-2 gap-3">
+              {directItems.map(item => (
+                <EquipmentCard
+                  key={item.id} item={item} canEdit={canEdit} categories={categories}
+                  openShoppingIds={openShoppingIds}
+                  onEdit={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
+                />
+              ))}
+            </div>
+          )}
 
           {cabinets.map(cab => {
             const items = cabinetItems(cab)
@@ -119,8 +131,8 @@ function RoomNode({ room, cabinets, equipment, categories, canEdit, hideEmpty, o
           })}
 
           {totalInRoom === 0 && (
-            <p className="text-sm text-gray-400 dark:text-gray-500 py-2 flex items-center gap-2">
-              <Package size={14} /> Kein Equipment
+            <p className="text-sm text-gray-400 py-2 flex items-center gap-2">
+              <Package size={14} /> Kein Inventar
             </p>
           )}
         </div>
@@ -141,28 +153,36 @@ function CabinetNode({ cabinet, items, categories, canEdit, openShoppingIds, onE
   const [open, setOpen] = useState(true)
 
   return (
-    <div className="border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden ml-2">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors text-left"
+        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
       >
-        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        <ArchiveX size={16} className="text-navy-600" />
-        <span className="font-medium text-sm text-gray-800 dark:text-gray-200">{cabinet.name}</span>
-        <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">{items.length}</span>
+        {open
+          ? <ChevronDown size={16} className="text-gray-400 shrink-0" />
+          : <ChevronRight size={16} className="text-gray-400 shrink-0" />
+        }
+        <ArchiveX size={16} className="text-navy-600 shrink-0" />
+        <span className="font-semibold text-sm text-gray-800">{cabinet.name}</span>
+        <span className="ml-auto w-6 h-6 rounded-full bg-gray-100 text-xs font-bold text-gray-500 flex items-center justify-center shrink-0">
+          {items.length}
+        </span>
       </button>
 
       {open && (
-        <div className="px-2 py-1.5 space-y-1.5 bg-white dark:bg-gray-800">
-          {items.map(item => (
-            <EquipmentCard
-              key={item.id} item={item} canEdit={canEdit} categories={categories}
-              openShoppingIds={openShoppingIds}
-              onEdit={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
-            />
-          ))}
-          {items.length === 0 && (
-            <p className="text-sm text-gray-400 dark:text-gray-500 py-1 px-1">Leer</p>
+        <div className="p-3">
+          {items.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {items.map(item => (
+                <EquipmentCard
+                  key={item.id} item={item} canEdit={canEdit} categories={categories}
+                  openShoppingIds={openShoppingIds}
+                  onEdit={onEditEquipment} onAddToShoppingList={onAddToShoppingList}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 py-1 px-1">Leer</p>
           )}
         </div>
       )}

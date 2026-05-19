@@ -45,7 +45,7 @@ export default function Rooms({ user }: Props) {
   async function saveRoomDelete(room: Room) {
     const equipInRoom = equipment.filter(e => e.room_id === room.id)
     if (equipInRoom.length > 0) {
-      alert(`Raum kann nicht gelöscht werden — ${equipInRoom.length} Equipment-Einträge sind noch zugewiesen.`)
+      alert(`Raum kann nicht gelöscht werden — ${equipInRoom.length} Inventar-Einträge sind noch zugewiesen.`)
       return
     }
     await supabase.from('cabinets').delete().eq('room_id', room.id)
@@ -70,7 +70,7 @@ export default function Rooms({ user }: Props) {
   async function saveCabinetDelete(cab: Cabinet) {
     const equipInCab = equipment.filter(e => e.cabinet_id === cab.id)
     if (equipInCab.length > 0) {
-      alert(`Schrank kann nicht gelöscht werden — ${equipInCab.length} Equipment-Einträge sind noch zugewiesen.`)
+      alert(`Schrank kann nicht gelöscht werden — ${equipInCab.length} Inventar-Einträge sind noch zugewiesen.`)
       return
     }
     await supabase.from('cabinets').delete().eq('id', cab.id)
@@ -237,7 +237,7 @@ function CabinetDialog({ cabinet, roomId, rooms, onSave, onCancel }: {
               </select>
               {selectedRoom !== roomId && (
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                  Alle Equipment-Einträge in diesem Schrank werden in den neuen Raum verschoben.
+                  Alle Inventar-Einträge in diesem Schrank werden in den neuen Raum verschoben.
                 </p>
               )}
             </div>

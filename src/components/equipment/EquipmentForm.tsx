@@ -1,8 +1,7 @@
 import { useState, useRef } from 'react'
-import { X, Trash2, Save, Camera, Image as ImageIcon } from 'lucide-react'
+import { X, Camera, Image as ImageIcon, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { sendDefectNotification, sendRepairedNotification } from '../../lib/push'
-import ConfirmDialog from '../ui/ConfirmDialog'
 import { useCategories } from '../../hooks/useCategories'
 import type { Equipment, Room, Cabinet, User, EquipmentStatus } from '../../types'
 
@@ -34,7 +33,6 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [confirmDelete, setConfirmDelete] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const roomCabinets = cabinets.filter(c => c.room_id === roomId)
@@ -134,16 +132,6 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
     onSaved()
   }
 
-  async function handleDelete() {
-    if (!item) return
-    if (item.photo_url) {
-      const path = item.photo_url.split('/').pop()
-      if (path) await supabase.storage.from('equipment-photos').remove([path])
-    }
-    await supabase.from('equipment').delete().eq('id', item.id)
-    onSaved()
-  }
-
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -161,29 +149,29 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
   }
 
   return (
-    <>
-      <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/50 overflow-y-auto py-8 px-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-              {isNew ? 'Equipment hinzufügen' : 'Equipment bearbeiten'}
-            </h2>
-            <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
-              <X size={20} />
-            </button>
-          </div>
+    <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/50 overflow-y-auto py-8 px-4">
+      <div className="bg-cream-50 rounded-2xl shadow-xl w-full max-w-lg">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4">
+          <h2 className="text-lg font-bold text-navy-900">
+            {isNew ? 'Inventar hinzufügen' : 'Inventar bearbeiten'}
+          </h2>
+          <button onClick={onClose} className="p-2 rounded-full bg-cream-100 text-gray-500 hover:bg-cream-200 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
 
-          <div className="px-6 py-4 space-y-4">
-            <Field label="Name *">
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className={inputCls}
-                placeholder="z.B. Hürden Set"
-              />
-            </Field>
+        <div className="px-6 pb-4 space-y-4">
+          <Field label="Bezeichnung">
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className={inputCls}
+              placeholder="z.B. Hürden Set"
+            />
+          </Field>
 
-            <Field label="Anzahl *">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Anzahl">
               <input
                 type="number"
                 min={1}
@@ -192,13 +180,20 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
                 className={inputCls}
               />
             </Field>
+            <Field label="Kategorie">
+              <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputCls}>
+                <option value="">— keine —</option>
+                {categories.filter(c => c.name !== 'Verbrauchsmaterial').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </Field>
+          </div>
 
-            <Field label="Raum *">
+          <div className={roomCabinets.length > 0 ? 'grid grid-cols-2 gap-3' : ''}>
+            <Field label="Raum">
               <select value={roomId} onChange={e => { setRoomId(e.target.value); setCabinetId('') }} className={inputCls}>
                 {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </Field>
-
             {roomCabinets.length > 0 && (
               <Field label="Schrank">
                 <select value={cabinetId} onChange={e => setCabinetId(e.target.value)} className={inputCls}>
@@ -207,158 +202,139 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
                 </select>
               </Field>
             )}
+          </div>
 
-            <Field label="Kategorie">
-              <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputCls}>
-                <option value="">— keine —</option>
-                {categories.filter(c => c.name !== 'Verbrauchsmaterial').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </Field>
-
-            <div>
-              <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={isConsumable}
-                  onChange={e => setIsConsumable(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-navy-700 focus:ring-navy-700"
-                />
-                Verbrauchsmaterial (wird auf Einkaufsliste angezeigt)
-              </label>
+          <Field label="Status">
+            <div className="flex rounded-xl bg-cream-100 p-1 gap-1">
+              {(['OK', 'DEFECT', 'IN_REPAIR'] as EquipmentStatus[]).map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setStatus(s)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    status === s
+                      ? s === 'OK'
+                        ? 'bg-teal-100 text-teal-700'
+                        : s === 'DEFECT'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {s === 'OK' ? 'OK' : s === 'DEFECT' ? 'Defekt' : 'In Reparatur'}
+                </button>
+              ))}
             </div>
+          </Field>
 
-            <Field label="Beschreibung">
+          {status !== 'OK' && (
+            <Field label="Defekt-Notiz">
               <textarea
-                value={description}
-                onChange={e => setDescription(e.target.value)}
+                value={defectNote}
+                onChange={e => setDefectNote(e.target.value)}
                 rows={2}
                 className={inputCls}
-                placeholder="Optional"
+                placeholder="Was ist defekt?"
               />
             </Field>
+          )}
 
-            <Field label="Status">
-              <div className="flex gap-2">
-                {(['OK', 'DEFECT', 'IN_REPAIR'] as EquipmentStatus[]).map(s => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setStatus(s)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      status === s
-                        ? s === 'OK' ? 'bg-navy-700 text-white border-navy-700'
-                          : s === 'DEFECT' ? 'bg-red-600 text-white border-red-600'
-                          : 'bg-yellow-500 text-white border-yellow-500'
-                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {s === 'OK' ? 'OK' : s === 'DEFECT' ? 'Defekt' : 'In Reparatur'}
-                  </button>
-                ))}
-              </div>
-            </Field>
+          <button
+            type="button"
+            onClick={() => setIsConsumable(!isConsumable)}
+            className="w-full flex items-center gap-4 px-4 py-3 bg-cream-100 rounded-xl text-left transition-colors hover:bg-cream-200"
+          >
+            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+              isConsumable ? 'bg-navy-700 border-navy-700' : 'border-gray-400 bg-white'
+            }`}>
+              {isConsumable && <Check size={12} className="text-white" />}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Verbrauchsmaterial</p>
+              <p className="text-xs text-gray-400">Erscheint auf der Einkaufsliste.</p>
+            </div>
+          </button>
 
-            {status !== 'OK' && (
-              <Field label="Defekt-Notiz">
-                <textarea
-                  value={defectNote}
-                  onChange={e => setDefectNote(e.target.value)}
-                  rows={2}
-                  className={inputCls}
-                  placeholder="Was ist defekt?"
+          <Field label="Beschreibung">
+            <textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              rows={2}
+              className={inputCls}
+              placeholder="Optional"
+            />
+          </Field>
+
+          <Field label="Foto">
+            {photoPreview ? (
+              <div className="relative">
+                <img
+                  src={photoPreview}
+                  alt="Equipment-Foto"
+                  className="w-full max-h-48 object-cover rounded-xl"
                 />
-              </Field>
-            )}
-
-            <Field label="Foto">
-              {photoPreview ? (
-                <div className="relative">
-                  <img
-                    src={photoPreview}
-                    alt="Equipment-Foto"
-                    className="w-full max-h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
-                  />
-                  <button
-                    type="button"
-                    onClick={removePhoto}
-                    className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-                    title="Foto entfernen"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex flex-col items-center justify-center gap-2 py-6 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-navy-700 hover:text-navy-700 transition-colors"
+                  onClick={removePhoto}
+                  className="absolute top-2 right-2 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                  title="Foto entfernen"
                 >
-                  <div className="flex gap-3">
-                    <Camera size={22} />
-                    <ImageIcon size={22} />
-                  </div>
-                  <span className="text-sm">Foto auswählen</span>
+                  <X size={14} />
                 </button>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-            </Field>
-
-            {error && <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>}
-          </div>
-
-          <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-            {!isNew && (user.role === 'ADMIN' || user.role === 'MEMBER') && (
+              </div>
+            ) : (
               <button
-                onClick={() => setConfirmDelete(true)}
-                className="p-2 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                title="Löschen"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-cream-100 rounded-xl text-gray-400 hover:border-navy-700 hover:text-navy-700 transition-colors bg-cream-100"
               >
-                <Trash2 size={18} />
+                <div className="flex gap-3">
+                  <Camera size={22} />
+                  <ImageIcon size={22} />
+                </div>
+                <span className="text-sm">Foto auswählen</span>
               </button>
             )}
-            <div className="flex gap-3 ml-auto">
-              <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                Abbrechen
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-navy-700 hover:bg-navy-800 disabled:opacity-50 text-white font-semibold transition-colors"
-              >
-                <Save size={16} />
-                {saving ? 'Speichern…' : 'Speichern'}
-              </button>
-            </div>
-          </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </Field>
+
+          {error && <p className="text-red-600 text-sm">{error}</p>}
+        </div>
+
+        <div className="flex gap-3 px-6 pb-6">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 py-3 rounded-xl bg-navy-700 hover:bg-navy-800 disabled:opacity-50 text-white font-semibold transition-colors"
+          >
+            {saving ? 'Speichern…' : 'Speichern'}
+          </button>
         </div>
       </div>
-
-      {confirmDelete && (
-        <ConfirmDialog
-          title="Equipment löschen"
-          message={`„${item?.name}" wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`}
-          onConfirm={handleDelete}
-          onCancel={() => setConfirmDelete(false)}
-        />
-      )}
-    </>
+    </div>
   )
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+      <label className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-2">{label}</label>
       {children}
     </div>
   )
 }
 
-const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-navy-700'
+const inputCls = 'w-full rounded-xl px-4 py-3 text-gray-900 bg-cream-100 border-0 focus:outline-none focus:ring-2 focus:ring-navy-700'

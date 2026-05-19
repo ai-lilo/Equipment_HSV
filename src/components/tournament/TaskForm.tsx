@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Save, Trash2 } from 'lucide-react'
+import { X, Trash2 } from 'lucide-react'
 import flatpickr from 'flatpickr'
 import { German } from 'flatpickr/dist/l10n/de.js'
 import 'flatpickr/dist/flatpickr.min.css'
@@ -9,28 +9,33 @@ import EquipmentLinker from './EquipmentLinker'
 
 interface Props {
   task: TournamentTask | null
+  categoryId?: string
   users: User[]
   currentUser: User
-  onSave: (changes: Partial<TournamentTask> & { category_id?: string; title?: string }) => Promise<void>
+  onSave: (changes: Partial<TournamentTask> & { title?: string }) => Promise<void>
   onDelete?: () => Promise<void>
   onClose: () => void
   onNavigateEquipment?: () => void
 }
 
-const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500'
+const inputCls = 'w-full rounded-xl px-4 py-3 text-gray-900 bg-cream-100 border-0 focus:outline-none focus:ring-2 focus:ring-navy-700'
 
-const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
-  { value: 'nicht_begonnen', label: '⚪ Nicht begonnen' },
-  { value: 'in_arbeit',      label: '🟡 In Arbeit' },
-  { value: 'abgeschlossen',  label: '✅ Abgeschlossen' },
-]
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-2">{label}</label>
+      {children}
+    </div>
+  )
+}
 
-export default function TaskForm({ task, users, currentUser, onSave, onDelete, onClose, onNavigateEquipment }: Props) {
+export default function TaskForm({ task, categoryId: _categoryId, users, currentUser, onSave, onDelete, onClose, onNavigateEquipment: _onNavigateEquipment }: Props) {
+  const isNew = task === null
   const isAdmin = currentUser.role === 'ADMIN'
   const isMember = currentUser.role === 'MEMBER'
   const isOwn = task?.responsible_user_id === currentUser.id
 
-  const canEditAll = isAdmin || isMember
+  const canEditAll = isNew || isAdmin || isMember
   const canEditOwn = !canEditAll && isOwn
 
   const [title, setTitle] = useState(task?.title ?? '')
@@ -77,7 +82,7 @@ export default function TaskForm({ task, users, currentUser, onSave, onDelete, o
   async function handleSave() {
     if (!title.trim()) return
     setSaving(true)
-    const changes: Partial<TournamentTask> & { category_id?: string; title?: string } = {}
+    const changes: Partial<TournamentTask> & { title?: string } = {}
     if (canEditAll) {
       changes.title = title.trim()
       changes.responsible_user_id = responsibleId || null
@@ -90,148 +95,147 @@ export default function TaskForm({ task, users, currentUser, onSave, onDelete, o
     onClose()
   }
 
+  const statusOptions: { v: TaskStatus; l: string; active: string }[] = [
+    { v: 'nicht_begonnen', l: 'Offen',     active: 'bg-gray-200 text-gray-700' },
+    { v: 'in_arbeit',      l: 'In Arbeit', active: 'bg-amber-100 text-amber-700' },
+    { v: 'abgeschlossen',  l: 'Erledigt',  active: 'bg-green-100 text-green-700' },
+  ]
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 px-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg p-5 shadow-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-gray-900 dark:text-white">
-            {task ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8 px-4">
+      <div className="bg-cream-50 rounded-2xl shadow-xl w-full max-w-lg">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4">
+          <h2 className="text-lg font-bold text-navy-900">
+            {isNew ? 'Neue Aufgabe' : 'Aufgabe bearbeiten'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-            <X size={20} />
+          <button onClick={onClose} className="p-2 rounded-full bg-cream-100 text-gray-500 hover:bg-cream-200 transition-colors">
+            <X size={18} />
           </button>
         </div>
 
-        <div className="space-y-3">
-          {/* Titel */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Titel *</label>
-            <input
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              disabled={!canEditAll}
-              className={inputCls}
-              placeholder="Aufgabentitel"
-            />
-          </div>
-
-          {/* Status */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status</label>
-            <select
-              value={status}
-              onChange={e => setStatus(e.target.value as TaskStatus)}
-              disabled={!canEditAll && !canEditOwn}
-              className={inputCls}
-            >
-              {STATUS_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Verantwortliche Person */}
+        <div className="px-6 pb-4 space-y-4">
           {canEditAll && (
-            <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Verantwortliche Person</label>
-              <select
-                value={responsibleId}
-                onChange={e => setResponsibleId(e.target.value)}
+            <Field label="Titel">
+              <input
+                autoFocus={isNew}
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="Aufgabentitel"
                 className={inputCls}
-              >
+              />
+            </Field>
+          )}
+
+          {(canEditAll || canEditOwn) && (
+            <Field label="Status">
+              <div className="flex rounded-xl bg-cream-100 p-1 gap-1">
+                {statusOptions.map(opt => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => setStatus(opt.v)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      status === opt.v ? opt.active : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {opt.l}
+                  </button>
+                ))}
+              </div>
+            </Field>
+          )}
+
+          {canEditAll && (
+            <Field label="Verantwortliche Person">
+              <select value={responsibleId} onChange={e => setResponsibleId(e.target.value)} className={inputCls}>
                 <option value="">— Niemand zugewiesen —</option>
                 {users.map(u => (
                   <option key={u.id} value={u.id}>{u.username}</option>
                 ))}
               </select>
-            </div>
+            </Field>
           )}
 
-          {/* Zieldatum */}
           {canEditAll && (
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Zieldatum</label>
+            <Field label="Zieldatum">
+              <div className="relative">
+                <input
+                  ref={dateInputRef}
+                  readOnly
+                  placeholder="TT.MM.JJJJ"
+                  className={inputCls}
+                />
                 {dueDate && (
                   <button
                     type="button"
                     onClick={() => { setDueDate(''); fpRef.current?.clear() }}
-                    className="text-xs text-gray-400 hover:text-red-500"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-red-500"
                   >
-                    × Datum entfernen
+                    × entfernen
                   </button>
                 )}
               </div>
-              <input
-                ref={dateInputRef}
-                readOnly
-                placeholder="TT.MM.JJJJ"
-                className={inputCls}
-              />
-            </div>
+            </Field>
           )}
 
-          {/* Notizen */}
-          <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Notizen</label>
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              disabled={!canEditAll && !canEditOwn}
-              rows={3}
-              className={`${inputCls} resize-none`}
-              placeholder="Hinweise"
-            />
-          </div>
+          {(canEditAll || canEditOwn) && (
+            <Field label="Notizen">
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                rows={3}
+                className={`${inputCls} resize-none`}
+                placeholder="Hinweise zur Aufgabe"
+              />
+            </Field>
+          )}
 
-          {/* Equipment-Verknüpfung */}
-          {task && (
-            <EquipmentLinker
-              taskId={task.id}
-              readOnly={!canEditAll}
-              onNavigateEquipment={onNavigateEquipment}
-            />
+          {!isNew && task && (
+            <div>
+              <label className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-2">Inventar</label>
+              <EquipmentLinker taskId={task.id} readOnly={!canEditAll} />
+            </div>
           )}
         </div>
 
-        <div className="flex gap-2 mt-5">
-          {onDelete && canEditAll && (
+        <div className="flex gap-3 px-6 pb-6">
+          {onDelete && canEditAll && !isNew && (
             confirmDelete ? (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700">
-                <span className="text-xs text-red-700 dark:text-red-300">Wirklich löschen?</span>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 border border-red-200">
+                <span className="text-xs text-red-700">Wirklich löschen?</span>
                 <button
                   onClick={async () => { await onDelete(); onClose() }}
-                  className="px-2 py-1 rounded bg-red-600 text-white text-xs hover:bg-red-700"
-                >
-                  Ja
-                </button>
+                  className="px-2 py-1 rounded-lg bg-red-600 text-white text-xs hover:bg-red-700"
+                >Ja</button>
                 <button
                   onClick={() => setConfirmDelete(false)}
-                  className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-xs text-gray-700 dark:text-gray-300"
-                >
-                  Nein
-                </button>
+                  className="px-2 py-1 rounded-lg border border-gray-300 text-xs text-gray-700"
+                >Nein</button>
               </div>
             ) : (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 text-sm hover:bg-red-100"
+                className="flex items-center gap-1.5 px-4 py-3 rounded-xl bg-red-50 text-red-700 text-sm hover:bg-red-100"
               >
-                <Trash2 size={15} /> Löschen
+                <Trash2 size={15} />
               </button>
             )
           )}
-          <div className="flex-1" />
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300">
-            Abbrechen
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || !title.trim()}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900 disabled:opacity-50"
-          >
-            <Save size={15} /> Speichern
-          </button>
+          <div className="flex-1 flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || !title.trim()}
+              className="flex-1 py-3 rounded-xl bg-navy-700 hover:bg-navy-800 disabled:opacity-50 text-white font-semibold transition-colors"
+            >
+              {saving ? 'Speichern…' : 'Speichern'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,10 +1,15 @@
 import jsPDF from 'jspdf'
-import type { Tournament, TournamentCategory, TournamentTask } from '../types/tournament'
+import type { Tournament, TournamentCategory, TournamentTask, TournamentHelper } from '../types/tournament'
 import type { User } from '../types'
 
 export interface TaskEquipmentEntry {
   name: string
   location: string
+}
+
+function fmtTime(t: string): string {
+  const [h, m] = t.split(':')
+  return m === '00' ? String(parseInt(h)) : `${parseInt(h)}:${m}`
 }
 
 const BLUE: [number, number, number] = [30, 64, 175]
@@ -288,4 +293,87 @@ function renderChecklistPage(doc: jsPDF, catName: string, tournamentName: string
   doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
   doc.text(catName, 14, 20)
+}
+
+// ─────────────────────────────────────────────────────────────
+// Helper list PDF
+// ─────────────────────────────────────────────────────────────
+export function exportHelperListPDF(tournamentName: string, helpers: TournamentHelper[]) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pageW = doc.internal.pageSize.getWidth()
+  const margin = 14
+  const contentW = pageW - margin * 2
+  const now = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+  drawBanner(doc, pageW, margin, `HSV Pegnitz – ${tournamentName}`, `Stand: ${now}`)
+  drawFooter(doc, pageW)
+
+  let y = 36
+  doc.setFontSize(15)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...DARK_TEXT)
+  doc.text('Helferliste', margin, y)
+  y += 10
+
+  if (helpers.length === 0) {
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...GRAY_TEXT)
+    doc.text('Keine Helfer eingetragen.', margin, y)
+  } else {
+    // Column widths: # | Aufgabe | Zeitfenster | Person
+    const colNum = 8
+    const colRole = contentW * 0.35
+    const colSlot = contentW * 0.22
+    const colPerson = contentW - colNum - colRole - colSlot
+
+    // Table header
+    doc.setFillColor(...LIGHT_BLUE)
+    doc.rect(margin, y, contentW, 7, 'F')
+    doc.setFontSize(8.5)
+    doc.setTextColor(...BLUE)
+    doc.setFont('helvetica', 'bold')
+    doc.text('#', margin + 2, y + 5)
+    doc.text('Aufgabe / Rolle', margin + colNum, y + 5)
+    doc.text('Zeitfenster', margin + colNum + colRole, y + 5)
+    doc.text('Person', margin + colNum + colRole + colSlot, y + 5)
+    y += 7
+
+    helpers.forEach((helper, i) => {
+      const rowH = 8
+      doc.setFillColor(i % 2 === 0 ? 255 : 248, i % 2 === 0 ? 255 : 248, i % 2 === 0 ? 255 : 248)
+      doc.rect(margin, y, contentW, rowH, 'F')
+
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...DARK_TEXT)
+      doc.text(String(i + 1), margin + 2, y + 5.5)
+
+      if (helper.role) {
+        const roleLines = doc.splitTextToSize(helper.role, colRole - 2)
+        doc.text(roleLines[0] as string, margin + colNum, y + 5.5)
+      }
+
+      const timeSlot = helper.time_start && helper.time_end ? `${fmtTime(helper.time_start)} bis ${fmtTime(helper.time_end)} Uhr` : ''
+      if (timeSlot) {
+        doc.setTextColor(...GRAY_TEXT)
+        doc.text(timeSlot, margin + colNum + colRole, y + 5.5)
+      }
+
+      const personName = helper.member?.name ?? ''
+      if (personName) {
+        doc.setTextColor(...GRAY_TEXT)
+        const nameLines = doc.splitTextToSize(personName, colPerson - 2)
+        doc.text(nameLines[0] as string, margin + colNum + colRole + colSlot, y + 5.5)
+      }
+
+      doc.setDrawColor(...ROW_SEP)
+      doc.setLineWidth(0.2)
+      doc.line(margin, y + rowH, margin + contentW, y + rowH)
+      y += rowH
+    })
+  }
+
+  const safeName = tournamentName.replace(/[^a-zA-Z0-9äöüÄÖÜß\s-]/g, '').trim()
+  doc.save(`Helferliste_${safeName}_${now.replace(/\./g, '-')}.pdf`)
 }
