@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ShoppingCart, Check, Trash2 } from 'lucide-react'
+import { Check, Plus, ShoppingCart } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { User, ShoppingListItem } from '../types'
 
@@ -7,21 +7,53 @@ interface Props {
   user: User
 }
 
+function relativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  if (days === 0) return 'heute'
+  if (days === 1) return 'gestern'
+  if (days < 7) return `vor ${days} Tagen`
+  const weeks = Math.floor(days / 7)
+  return `vor ${weeks} Woche${weeks > 1 ? 'n' : ''}`
+}
+
 export default function ShoppingList({ user }: Props) {
   const [items, setItems] = useState<ShoppingListItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [newNote, setNewNote] = useState('')
+  const [adding, setAdding] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase
       .from('shopping_list')
-      .select('*, equipment:equipment_id(name, description), user:added_by(username)')
+      .select('*, equipment:equipment_id(name, description, count), user:added_by(username)')
       .order('created_at', { ascending: false })
     setItems((data ?? []) as ShoppingListItem[])
     setLoading(false)
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  async function handleAdd() {
+    const text = newNote.trim()
+    if (!text) return
+    setAdding(true)
+    const { data } = await supabase
+      .from('shopping_list')
+      .insert({
+        equipment_id: null,
+        note: text,
+        added_by: user.id,
+        status: 'open',
+        updated_at: new Date().toISOString(),
+      })
+      .select('*, equipment:equipment_id(name, description, count), user:added_by(username)')
+      .single()
+    if (data) setItems(prev => [data as ShoppingListItem, ...prev])
+    setNewNote('')
+    setAdding(false)
+  }
 
   async function markBought(id: string) {
     await supabase
@@ -47,118 +79,143 @@ export default function ShoppingList({ user }: Props) {
   const openItems = items.filter(i => i.status === 'open')
   const boughtItems = items.filter(i => i.status === 'bought')
 
-  if (loading) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <p className="text-center text-gray-400 py-12">Lade…</p>
-      </div>
-    )
-  }
-
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-2 mb-6">
-        <ShoppingCart size={22} className="text-navy-700" />
-        <h1 className="text-xl font-bold text-gray-900">Einkaufsliste</h1>
-        {openItems.length > 0 && (
-          <span className="ml-1 text-xs font-bold bg-navy-100 text-navy-700 px-2 py-0.5 rounded-full">
-            {openItems.length} offen
-          </span>
+    <div className="max-w-2xl mx-auto px-4 pt-6 pb-10">
+      {/* Hero */}
+      <div className="mb-6">
+        <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-1">Vorstand &amp; Admin</p>
+        <h1 className="text-3xl font-bold text-navy-900" style={{ fontFamily: "'Lora', serif" }}>
+          Einkaufs<em>liste</em>
+        </h1>
+        {!loading && (
+          <p className="text-sm text-gray-400 mt-2">
+            {openItems.length} offene Artikel · {boughtItems.length} erledigt
+          </p>
         )}
       </div>
 
-      {items.length === 0 && (
+      {/* Quick-Add */}
+      <div className="flex gap-2 mb-6">
+        <div className="relative flex-1">
+          <Plus size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={newNote}
+            onChange={e => setNewNote(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            placeholder="Artikel notieren …"
+            className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border-0 shadow-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-navy-700"
+          />
+        </div>
+        <button
+          onClick={handleAdd}
+          disabled={adding || !newNote.trim()}
+          className="px-5 py-3 bg-navy-700 hover:bg-navy-800 disabled:opacity-40 text-white font-semibold rounded-xl transition-colors whitespace-nowrap"
+        >
+          Hinzufügen
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-center text-gray-400 py-12">Lade…</p>
+      ) : items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <ShoppingCart size={40} className="mx-auto mb-3 opacity-30" />
           <p>Die Einkaufsliste ist leer.</p>
-          <p className="text-sm mt-1">Verbrauchsmaterial kann über den Warenkorb-Button im Inventar hinzugefügt werden.</p>
+          <p className="text-sm mt-1">Verbrauchsmaterial über den Warenkorb im Inventar hinzufügen.</p>
         </div>
-      )}
+      ) : (
+        <>
+          {openItems.length > 0 && (
+            <div className="space-y-2 mb-6">
+              {openItems.map(item => (
+                <ShoppingRow
+                  key={item.id}
+                  item={item}
+                  onToggle={() => markBought(item.id)}
+                  onDelete={() => deleteItem(item.id)}
+                  canDelete={user.role === 'ADMIN' || item.added_by === user.id}
+                />
+              ))}
+            </div>
+          )}
 
-      {openItems.length > 0 && (
-        <section className="mb-6">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Offen</h2>
-          <div className="space-y-2">
-            {openItems.map(item => (
-              <ShoppingListRow
-                key={item.id}
-                item={item}
-                onMarkBought={() => markBought(item.id)}
-                onMarkOpen={() => markOpen(item.id)}
-                onDelete={() => deleteItem(item.id)}
-                canDelete={user.role === 'ADMIN' || item.added_by === user.id}
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {boughtItems.length > 0 && (
-        <section>
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Gekauft</h2>
-          <div className="space-y-2 opacity-60">
-            {boughtItems.map(item => (
-              <ShoppingListRow
-                key={item.id}
-                item={item}
-                onMarkBought={() => markBought(item.id)}
-                onMarkOpen={() => markOpen(item.id)}
-                onDelete={() => deleteItem(item.id)}
-                canDelete={user.role === 'ADMIN' || item.added_by === user.id}
-              />
-            ))}
-          </div>
-        </section>
+          {boughtItems.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-sm font-semibold text-gray-500">Erledigt</span>
+                <span className="w-6 h-6 rounded-full bg-gray-200 text-xs font-bold text-gray-500 flex items-center justify-center">
+                  {boughtItems.length}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {boughtItems.map(item => (
+                  <ShoppingRow
+                    key={item.id}
+                    item={item}
+                    onToggle={() => markOpen(item.id)}
+                    onDelete={() => deleteItem(item.id)}
+                    canDelete={user.role === 'ADMIN' || item.added_by === user.id}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
 }
 
-function ShoppingListRow({ item, onMarkBought, onMarkOpen, onDelete, canDelete }: {
+function ShoppingRow({ item, onToggle, onDelete, canDelete }: {
   item: ShoppingListItem
-  onMarkBought: () => void
-  onMarkOpen: () => void
+  onToggle: () => void
   onDelete: () => void
   canDelete: boolean
 }) {
   const isBought = item.status === 'bought'
-  return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
-      isBought
-        ? 'border-gray-100 bg-gray-50'
-        : 'border-navy-100 bg-white'
-    }`}>
-      <button
-        onClick={isBought ? onMarkOpen : onMarkBought}
-        className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-          isBought
-            ? 'border-green-500 bg-green-500 text-white'
-            : 'border-gray-300 hover:border-green-500'
-        }`}
-        title={isBought ? 'Als offen markieren' : 'Als gekauft markieren'}
-      >
-        {isBought && <Check size={13} />}
-      </button>
+  const name = item.equipment?.name ?? item.note ?? '—'
+  const count = item.equipment?.count
 
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white shadow-sm cursor-pointer"
+      onClick={onToggle}
+    >
+      {/* Checkbox */}
+      <div className={`shrink-0 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${
+        isBought
+          ? 'border-navy-700 bg-navy-700 text-white'
+          : 'border-cream-200 bg-cream-100'
+      }`}>
+        {isBought && <Check size={13} strokeWidth={3} />}
+      </div>
+
+      {/* Text */}
       <div className="flex-1 min-w-0">
-        <p className={`font-medium text-gray-900 ${isBought ? 'line-through text-gray-400' : ''}`}>
-          {item.equipment?.name ?? '—'}
+        <p className={`font-semibold text-sm text-gray-900 leading-tight ${isBought ? 'line-through text-gray-400' : ''}`}>
+          {name}
         </p>
-        {item.equipment?.description && (
-          <p className="text-xs text-gray-400 truncate">{item.equipment.description}</p>
-        )}
-        <p className="text-xs text-gray-400">
-          von {item.user?.username ?? '—'} · {new Date(item.created_at).toLocaleDateString('de-DE')}
+        <p className="text-xs text-gray-400 mt-0.5">
+          von {item.user?.username ?? '—'} · {relativeTime(item.created_at)}
         </p>
       </div>
 
+      {/* Menge */}
+      {count !== undefined && (
+        <span className={`text-sm font-bold shrink-0 ${isBought ? 'text-gray-400' : 'text-navy-700'}`}>
+          {count} Stk.
+        </span>
+      )}
+
+      {/* Löschen */}
       {canDelete && (
         <button
-          onClick={onDelete}
-          className="p-1.5 text-gray-300 hover:text-red-500 rounded transition-colors shrink-0"
+          onClick={e => { e.stopPropagation(); onDelete() }}
+          className="shrink-0 text-gray-300 hover:text-red-400 transition-colors ml-1 p-1"
           title="Entfernen"
         >
-          <Trash2 size={15} />
+          ×
         </button>
       )}
     </div>

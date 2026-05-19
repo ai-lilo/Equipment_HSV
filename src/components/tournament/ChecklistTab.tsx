@@ -68,9 +68,9 @@ function ChecklistCategoryBlock({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
       {/* Category header */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800">
+      <div className="flex items-center gap-2 px-4 py-3 bg-cream-100 border-b border-cream-200">
         {renaming ? (
           <div className="flex-1 flex gap-1.5">
             <input
@@ -81,15 +81,15 @@ function ChecklistCategoryBlock({
                 if (e.key === 'Enter') { onRenameCategory(cat.id, newName.trim()); setRenaming(false) }
                 if (e.key === 'Escape') { setRenaming(false); setNewName(cat.name) }
               }}
-              className="flex-1 text-sm border border-blue-400 rounded px-2 py-0.5 dark:bg-gray-700 dark:text-white outline-none"
+              className="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-navy-700"
             />
             <button onClick={() => { onRenameCategory(cat.id, newName.trim()); setRenaming(false) }} className="text-green-600"><Check size={15} /></button>
-            <button onClick={() => { setRenaming(false); setNewName(cat.name) }} className="text-gray-400 dark:text-gray-500"><X size={15} /></button>
+            <button onClick={() => { setRenaming(false); setNewName(cat.name) }} className="text-gray-400"><X size={15} /></button>
           </div>
         ) : (
           <div className="flex-1">
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">{cat.name}</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{done}/{total} erledigt</p>
+            <h3 className="text-sm font-bold text-gray-900">{cat.name}</h3>
+            <p className="text-xs text-gray-500 mt-0.5">{done}/{total} erledigt</p>
           </div>
         )}
 
@@ -98,24 +98,24 @@ function ChecklistCategoryBlock({
             <>
               <button
                 onClick={() => { setShowAddInput(true); setTimeout(() => addInputRef.current?.focus(), 50) }}
-                className="p-1 rounded text-gray-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40"
+                className="p-1 rounded text-gray-400 hover:text-navy-700 hover:bg-cream-200"
                 title="Aufgabe hinzufügen"
               ><Plus size={14} /></button>
               <button
                 onClick={() => setRenaming(true)}
-                className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40"
+                className="p-1 rounded text-gray-400 hover:text-navy-700 hover:bg-cream-200"
                 title="Umbenennen"
               ><Pencil size={13} /></button>
               {confirmDeleteCat ? (
                 <span className="flex items-center gap-1 text-xs">
-                  <span className="text-red-600 dark:text-red-400 font-medium">Löschen?</span>
+                  <span className="text-red-600 font-medium">Löschen?</span>
                   <button onClick={() => { onDeleteCategory(cat.id); setConfirmDeleteCat(false) }} className="px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Ja</button>
-                  <button onClick={() => setConfirmDeleteCat(false)} className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300">Nein</button>
+                  <button onClick={() => setConfirmDeleteCat(false)} className="px-1.5 py-0.5 rounded border border-gray-300 text-gray-600">Nein</button>
                 </span>
               ) : (
                 <button
                   onClick={() => setConfirmDeleteCat(true)}
-                  className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
                   title="Kategorie löschen"
                 ><Trash2 size={13} /></button>
               )}
@@ -123,31 +123,29 @@ function ChecklistCategoryBlock({
           )}
           <button
             onClick={() => onPrint(cat)}
-            className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            className="flex items-center gap-1 text-xs text-navy-700 hover:text-navy-800 hover:underline"
           >
             <FileDown size={13} /> Drucken
           </button>
         </div>
       </div>
 
-      {/* Task list */}
-      <ul className="divide-y divide-gray-100 dark:divide-gray-700">
+      {/* Task list — individual white cards */}
+      <div className="space-y-2 p-3">
         {catTasks.map(task => {
           const checked = task.status === 'abgeschlossen'
           return (
-            <li key={task.id} className="px-4 py-2.5">
+            <div key={task.id} className="bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-3">
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => toggleTask(task)}
-                  className={`w-5 h-5 shrink-0 rounded border-2 flex items-center justify-center transition-colors ${
-                    checked ? 'bg-green-500 border-green-500' : 'border-gray-300 dark:border-gray-500'
+                  className={`w-6 h-6 shrink-0 rounded-lg border-2 flex items-center justify-center transition-colors ${
+                    checked
+                      ? 'bg-navy-700 border-navy-700 text-white'
+                      : 'border-cream-200 bg-cream-100'
                   }`}
                 >
-                  {checked && (
-                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
-                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+                  {checked && <Check size={13} strokeWidth={3} />}
                 </button>
 
                 {editingTaskId === task.id ? (
@@ -160,13 +158,13 @@ function ChecklistCategoryBlock({
                         if (e.key === 'Enter') handleRenameTask(task)
                         if (e.key === 'Escape') setEditingTaskId(null)
                       }}
-                      className="flex-1 text-sm border border-blue-400 rounded px-2 py-0.5 dark:bg-gray-700 dark:text-white outline-none"
+                      className="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-navy-700"
                     />
                     <button onClick={() => handleRenameTask(task)} className="text-green-600"><Check size={15} /></button>
-                    <button onClick={() => setEditingTaskId(null)} className="text-gray-400 dark:text-gray-500"><X size={15} /></button>
+                    <button onClick={() => setEditingTaskId(null)} className="text-gray-400"><X size={15} /></button>
                   </div>
                 ) : (
-                  <span className={`flex-1 text-sm ${checked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                  <span className={`flex-1 text-sm ${checked ? 'line-through text-gray-400' : 'text-gray-900'}`}>
                     {task.title}
                   </span>
                 )}
@@ -175,18 +173,18 @@ function ChecklistCategoryBlock({
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => { setEditingTaskId(task.id); setEditingTitle(task.title); setConfirmDeleteTaskId(null) }}
-                      className="p-0.5 rounded text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
+                      className="p-0.5 rounded text-gray-400 hover:text-navy-700"
                       title="Aufgabe umbenennen"
                     ><Pencil size={12} /></button>
                     {confirmDeleteTaskId === task.id ? (
                       <span className="flex items-center gap-1 text-xs">
                         <button onClick={() => { onDeleteTask(task.id); setConfirmDeleteTaskId(null) }} className="px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Ja</button>
-                        <button onClick={() => setConfirmDeleteTaskId(null)} className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300">Nein</button>
+                        <button onClick={() => setConfirmDeleteTaskId(null)} className="px-1.5 py-0.5 rounded border border-gray-300 text-gray-600">Nein</button>
                       </span>
                     ) : (
                       <button
                         onClick={() => setConfirmDeleteTaskId(task.id)}
-                        className="p-0.5 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400"
+                        className="p-0.5 rounded text-gray-400 hover:text-red-600"
                         title="Aufgabe löschen"
                       ><Trash2 size={12} /></button>
                     )}
@@ -195,32 +193,30 @@ function ChecklistCategoryBlock({
               </div>
 
               <EquipmentLinker taskId={task.id} readOnly={!isAdmin} />
-            </li>
+            </div>
           )
         })}
 
         {isAdmin && showAddInput && (
-          <li className="px-4 py-2.5">
-            <div className="flex gap-1.5">
-              <input
-                ref={addInputRef}
-                value={addingTitle}
-                onChange={e => setAddingTitle(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') handleAddTask()
-                  if (e.key === 'Escape') { setShowAddInput(false); setAddingTitle('') }
-                }}
-                placeholder="Neue Aufgabe..."
-                className="flex-1 text-sm border border-blue-400 rounded-lg px-2.5 py-1.5 dark:bg-gray-700 dark:text-white outline-none"
-              />
-              <button onClick={handleAddTask} className="px-3 py-1.5 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900">OK</button>
-              <button onClick={() => { setShowAddInput(false); setAddingTitle('') }} className="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300">
-                <X size={15} />
-              </button>
-            </div>
-          </li>
+          <div className="flex gap-1.5">
+            <input
+              ref={addInputRef}
+              value={addingTitle}
+              onChange={e => setAddingTitle(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleAddTask()
+                if (e.key === 'Escape') { setShowAddInput(false); setAddingTitle('') }
+              }}
+              placeholder="Neue Aufgabe..."
+              className="flex-1 text-sm border border-gray-300 rounded-xl px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-navy-700"
+            />
+            <button onClick={handleAddTask} className="px-3 py-1.5 rounded-xl bg-navy-700 text-white text-sm hover:bg-navy-800">OK</button>
+            <button onClick={() => { setShowAddInput(false); setAddingTitle('') }} className="px-2 py-1.5 rounded-xl border border-gray-300 text-sm text-gray-600">
+              <X size={15} />
+            </button>
+          </div>
         )}
-      </ul>
+      </div>
     </div>
   )
 }
@@ -273,14 +269,14 @@ export default function ChecklistTab({ tournamentName, categories, tasks, isAdmi
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         {checklistCats.length > 0 && (
           <button
             onClick={handlePrintAll}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 shadow-sm"
           >
-            <FileDown size={16} /> Alle Checklisten drucken
+            <FileDown size={16} /> Alle drucken
           </button>
         )}
         {isAdmin && (
@@ -292,15 +288,15 @@ export default function ChecklistTab({ tournamentName, categories, tasks, isAdmi
                 onChange={e => setNewCatName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleAddCategory(); if (e.key === 'Escape') { setShowNewCatInput(false); setNewCatName('') } }}
                 placeholder="Kategoriename..."
-                className="flex-1 text-sm border border-blue-400 rounded-lg px-2 py-1.5 dark:bg-gray-700 dark:text-white outline-none"
+                className="flex-1 text-sm border border-gray-300 rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-navy-700"
               />
               <button onClick={handleAddCategory} className="text-green-600"><Check size={16} /></button>
-              <button onClick={() => { setShowNewCatInput(false); setNewCatName('') }} className="text-gray-400 dark:text-gray-500"><X size={16} /></button>
+              <button onClick={() => { setShowNewCatInput(false); setNewCatName('') }} className="text-gray-400"><X size={16} /></button>
             </div>
           ) : (
             <button
               onClick={() => setShowNewCatInput(true)}
-              className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900"
+              className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl bg-navy-700 text-white text-sm hover:bg-navy-800"
             >
               <Plus size={15} /> Neue Checkliste
             </button>
@@ -309,7 +305,7 @@ export default function ChecklistTab({ tournamentName, categories, tasks, isAdmi
       </div>
 
       {checklistCats.length === 0 && (
-        <div className="text-center py-12 text-gray-400 dark:text-gray-500">
+        <div className="text-center py-12 text-gray-400">
           <p className="text-sm">Noch keine Checklisten angelegt.</p>
           {isAdmin && <p className="text-xs mt-1 opacity-70">Klicke auf „Neue Checkliste" um eine Kategorie anzulegen.</p>}
         </div>

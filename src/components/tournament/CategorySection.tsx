@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, Check, X, GripVertical } from 'lucide-react'
 import type { User } from '../../types'
 import type { TournamentCategory, TournamentTask, TaskStatus } from '../../types/tournament'
@@ -11,7 +11,7 @@ interface Props {
   users: User[]
   currentUser: User
   isAdmin: boolean
-  onAddTask: (categoryId: string, title: string) => Promise<void>
+  onAddTask: (categoryId: string, title: string, userId?: string, extra?: Partial<Pick<TournamentTask, 'status' | 'responsible_user_id' | 'due_date' | 'notes'>>) => Promise<void>
   onUpdateTask: (id: string, changes: Partial<TournamentTask>) => Promise<void>
   onDeleteTask: (id: string) => Promise<void>
   onRename: (id: string, name: string) => Promise<void>
@@ -28,16 +28,14 @@ export default function CategorySection({
   onAddTask, onUpdateTask, onDeleteTask,
   onRename, onDelete,
   onDragStart, onDragOver, onDrop,
-  statusFilter, onNavigateEquipment,
+  statusFilter,
 }: Props) {
   const [open, setOpen] = useState(true)
   const [renaming, setRenaming] = useState(false)
   const [newName, setNewName] = useState(category.name)
-  const [addingTitle, setAddingTitle] = useState('')
-  const [showAddInput, setShowAddInput] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
   const [editTask, setEditTask] = useState<TournamentTask | null>(null)
   const [confirmDeleteCat, setConfirmDeleteCat] = useState(false)
-  const addInputRef = useRef<HTMLInputElement>(null)
 
   const visibleTasks = tasks.filter(t => {
     if (!statusFilter) return true
@@ -47,11 +45,17 @@ export default function CategorySection({
     return t.status === statusFilter
   })
 
-  async function handleAddTask() {
-    if (!addingTitle.trim()) return
-    await onAddTask(category.id, addingTitle.trim())
-    setAddingTitle('')
-    setShowAddInput(false)
+  const doneCount = tasks.filter(t => t.status === 'abgeschlossen').length
+
+  async function handleCreateTask(changes: Partial<TournamentTask> & { title?: string }) {
+    if (!changes.title?.trim()) return
+    await onAddTask(category.id, changes.title.trim(), currentUser.id, {
+      status: changes.status,
+      responsible_user_id: changes.responsible_user_id ?? null,
+      due_date: changes.due_date ?? null,
+      notes: changes.notes ?? null,
+    })
+    setShowAddForm(false)
   }
 
   async function handleStatusChange(id: string, status: TaskStatus) {
@@ -65,14 +69,12 @@ export default function CategorySection({
         onDragStart={e => onDragStart(e, category.id)}
         onDragOver={onDragOver}
         onDrop={e => onDrop(e, category.id)}
-        className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
       >
-        {/* Category header */}
-        <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2 py-2 mb-2">
           {isAdmin && (
-            <GripVertical size={16} className="text-gray-300 dark:text-gray-600 shrink-0 cursor-grab" />
+            <GripVertical size={16} className="text-gray-300 shrink-0 cursor-grab" />
           )}
-          <button onClick={() => setOpen(o => !o)} className="text-gray-500 dark:text-gray-400 shrink-0">
+          <button onClick={() => setOpen(o => !o)} className="text-gray-400 shrink-0">
             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           </button>
 
@@ -86,37 +88,37 @@ export default function CategorySection({
                   if (e.key === 'Enter') { onRename(category.id, newName.trim()); setRenaming(false) }
                   if (e.key === 'Escape') { setRenaming(false); setNewName(category.name) }
                 }}
-                className="flex-1 text-sm border border-blue-400 rounded px-2 py-0.5 dark:bg-gray-700 dark:text-white outline-none"
+                className="flex-1 text-sm border border-gray-300 rounded-xl px-2 py-0.5 outline-none focus:ring-2 focus:ring-navy-700"
               />
               <button onClick={() => { onRename(category.id, newName.trim()); setRenaming(false) }} className="text-green-600"><Check size={15} /></button>
-              <button onClick={() => { setRenaming(false); setNewName(category.name) }} className="text-gray-400 dark:text-gray-500"><X size={15} /></button>
+              <button onClick={() => { setRenaming(false); setNewName(category.name) }} className="text-gray-400"><X size={15} /></button>
             </div>
           ) : (
-            <span className="flex-1 text-sm font-semibold text-gray-800 dark:text-white">{category.name}</span>
+            <span className="flex-1 font-bold text-lg text-gray-900">{category.name}</span>
           )}
 
-          <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{tasks.length}</span>
+          <span className="text-sm text-gray-400 shrink-0">{doneCount} / {tasks.length}</span>
 
           {isAdmin && !renaming && (
             <>
               <button
-                onClick={() => { setShowAddInput(true); setOpen(true); setTimeout(() => addInputRef.current?.focus(), 50) }}
-                className="p-1 rounded text-gray-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                onClick={() => { setShowAddForm(true); setOpen(true) }}
+                className="p-1 rounded text-gray-400 hover:text-navy-700 hover:bg-cream-200"
                 title="Aufgabe hinzufügen"
               >
                 <Plus size={15} />
               </button>
-              <button onClick={() => setRenaming(true)} className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+              <button onClick={() => setRenaming(true)} className="p-1 rounded text-gray-400 hover:text-navy-700 hover:bg-cream-200">
                 <Pencil size={13} />
               </button>
               {confirmDeleteCat ? (
                 <span className="flex items-center gap-1 text-xs">
-                  <span className="text-red-600 dark:text-red-400 font-medium">Löschen?</span>
+                  <span className="text-red-600 font-medium">Löschen?</span>
                   <button onClick={() => { onDelete(category.id); setConfirmDeleteCat(false) }} className="px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Ja</button>
-                  <button onClick={() => setConfirmDeleteCat(false)} className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Nein</button>
+                  <button onClick={() => setConfirmDeleteCat(false)} className="px-1.5 py-0.5 rounded border border-gray-300 text-gray-600">Nein</button>
                 </span>
               ) : (
-                <button onClick={() => setConfirmDeleteCat(true)} className="p-1 rounded text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                <button onClick={() => setConfirmDeleteCat(true)} className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50">
                   <Trash2 size={13} />
                 </button>
               )}
@@ -124,11 +126,10 @@ export default function CategorySection({
           )}
         </div>
 
-        {/* Tasks */}
         {open && (
-          <div className="p-2 space-y-1.5">
-            {visibleTasks.length === 0 && !showAddInput && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-2">Keine Aufgaben</p>
+          <div className="space-y-2 ml-6 mb-1">
+            {visibleTasks.length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-2">Keine Aufgaben</p>
             )}
             {visibleTasks.map(task => (
               <TaskCard
@@ -140,31 +141,20 @@ export default function CategorySection({
                 onStatusChange={handleStatusChange}
               />
             ))}
-
-            {showAddInput && (
-              <div className="flex gap-1.5">
-                <input
-                  ref={addInputRef}
-                  value={addingTitle}
-                  onChange={e => setAddingTitle(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') handleAddTask()
-                    if (e.key === 'Escape') { setShowAddInput(false); setAddingTitle('') }
-                  }}
-                  placeholder="Neue Aufgabe..."
-                  className="flex-1 text-sm border border-blue-400 rounded-lg px-2.5 py-1.5 dark:bg-gray-700 dark:text-white outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <button onClick={handleAddTask} className="px-3 py-1.5 rounded-lg bg-blue-800 text-white text-sm hover:bg-blue-900">
-                  OK
-                </button>
-                <button onClick={() => { setShowAddInput(false); setAddingTitle('') }} className="px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-600 dark:text-gray-300">
-                  <X size={15} />
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
+
+      {showAddForm && (
+        <TaskForm
+          task={null}
+          categoryId={category.id}
+          users={users}
+          currentUser={currentUser}
+          onSave={handleCreateTask}
+          onClose={() => setShowAddForm(false)}
+        />
+      )}
 
       {editTask && (
         <TaskForm
@@ -174,7 +164,6 @@ export default function CategorySection({
           onSave={async changes => { await onUpdateTask(editTask.id, changes) }}
           onDelete={async () => { await onDeleteTask(editTask.id) }}
           onClose={() => setEditTask(null)}
-          onNavigateEquipment={onNavigateEquipment}
         />
       )}
     </>

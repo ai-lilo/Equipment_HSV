@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trophy, Archive, ChevronDown, ChevronRight, RotateCcw, FileText } from 'lucide-react'
+import { Plus, Trophy, Archive, ChevronDown, ChevronRight, RotateCcw, FileText, Calendar } from 'lucide-react'
 import type { User } from '../types'
 import type { Tournament } from '../types/tournament'
 import { useTournaments } from '../hooks/useTournaments'
@@ -16,7 +16,7 @@ type MainTab = 'uebersicht' | 'meine'
 
 export default function Tournament({ user, onNavigate }: Props) {
   const isAdmin = user.role === 'ADMIN' || user.role === 'MEMBER'
-  const { tournaments, templates, loading, createTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate, restoreTemplate } = useTournaments()
+  const { tournaments, templates, loading, createTournament, updateTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate, restoreTemplate } = useTournaments()
 
   const [mainTab, setMainTab] = useState<MainTab>('uebersicht')
   const [showTemplates, setShowTemplates] = useState(false)
@@ -27,14 +27,13 @@ export default function Tournament({ user, onNavigate }: Props) {
 
   const active = tournaments.filter(t => !t.archived)
   const archived = tournaments.filter(t => t.archived)
-
   const selected = tournaments.find(t => t.id === selectedId) ?? null
 
-  function handleNavigateEquipment() {
-    onNavigate('dashboard')
-  }
+  const today = new Date().toISOString().split('T')[0]
+  const upcoming = active.filter(t => t.date >= today).sort((a, b) => a.date < b.date ? -1 : 1)
+  const past = active.filter(t => t.date < today).sort((a, b) => a.date > b.date ? -1 : 1)
+  const sortedActive = [...upcoming, ...past]
 
-  // ── Detail view ──────────────────────────────────────────────────────
   if (selected) {
     return (
       <TournamentDetail
@@ -47,38 +46,28 @@ export default function Tournament({ user, onNavigate }: Props) {
         onDelete={async id => { await deleteTournament(id); setSelectedId(null) }}
         onCreateTemplate={async (id, name) => { await createTemplateFromTournament(id, name) }}
         onReplaceTemplate={async (templateId, tournamentId) => { await replaceTemplate(templateId, tournamentId) }}
-        onNavigateEquipment={handleNavigateEquipment}
+        onUpdateTournament={async (name, date) => { await updateTournament(selected!.id, name, date) }}
+        onNavigateEquipment={() => onNavigate('dashboard')}
       />
     )
   }
 
-  // ── List view ────────────────────────────────────────────────────────
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      {/* Page header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Trophy size={24} className="text-navy-700 shrink-0" />
-        <h1 className="text-xl font-bold text-gray-900">Veranstaltungs-Organisation</h1>
-        {isAdmin && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-lg bg-navy-700 text-white text-sm hover:bg-navy-800"
-          >
-            <Plus size={16} /> Veranstaltung anlegen
-          </button>
-        )}
+    <div className="max-w-2xl mx-auto px-4 pt-6 pb-10">
+      <div className="mb-6">
+        <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-1">Veranstaltung</p>
+        <h1 className="text-3xl font-bold text-navy-900" style={{ fontFamily: "'Lora', serif" }}>
+          Aufgaben &amp; <em>Checklisten</em>
+        </h1>
       </div>
 
-      {/* Main tabs */}
-      <div className="flex gap-1 mb-5 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex gap-1 mb-5 bg-cream-200 p-1 rounded-xl">
         {([['uebersicht', 'Übersicht'], ['meine', 'Meine Aufgaben']] as const).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setMainTab(key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              mainTab === key
-                ? 'border-navy-700 text-navy-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              mainTab === key ? 'bg-white text-navy-800 shadow-sm font-semibold' : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             {label}
@@ -86,115 +75,101 @@ export default function Tournament({ user, onNavigate }: Props) {
         ))}
       </div>
 
-      {/* ÜBERSICHT */}
       {mainTab === 'uebersicht' && (
         <>
+          {isAdmin && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="w-full flex items-center justify-center gap-2 bg-navy-700 hover:bg-navy-800 text-white py-3 rounded-xl font-semibold transition-colors mb-5"
+            >
+              <Plus size={18} /> Veranstaltung anlegen
+            </button>
+          )}
+
           {loading ? (
-            <div className="text-center py-12 text-gray-400">Lädt...</div>
+            <p className="text-center text-gray-400 py-12">Lade…</p>
+          ) : sortedActive.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <Trophy size={40} className="mx-auto mb-3 opacity-30" />
+              <p>Noch keine aktiven Veranstaltungen.</p>
+            </div>
           ) : (
-            <>
-              {/* Active tournaments */}
-              {active.length === 0 ? (
-                <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-                  <Trophy size={40} className="mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">Noch keine aktiven Veranstaltungen.</p>
-                  {isAdmin && <p className="text-xs mt-1">Klicke auf "Veranstaltung anlegen" um zu beginnen.</p>}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {active.map(t => (
-                    <TournamentCard key={t.id} tournament={t} onClick={() => setSelectedId(t.id)} />
+            <div className="space-y-3">
+              {sortedActive.map((t, i) => (
+                <TournamentCard
+                  key={t.id}
+                  tournament={t}
+                  onClick={() => setSelectedId(t.id)}
+                  isNext={i === 0 && t.date >= today}
+                />
+              ))}
+            </div>
+          )}
+
+          {archived.length > 0 && (
+            <div className="mt-6">
+              <button
+                onClick={() => setShowArchived(o => !o)}
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-2"
+              >
+                {showArchived ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <Archive size={15} />
+                <span>Archivierte Turniere ({archived.length})</span>
+              </button>
+              {showArchived && (
+                <div className="space-y-2 opacity-70">
+                  {archived.map(t => (
+                    <TournamentCard key={t.id} tournament={t} onClick={() => setSelectedId(t.id)} archived />
                   ))}
                 </div>
               )}
+            </div>
+          )}
 
-              {/* Archived toggle */}
-              {archived.length > 0 && (
-                <div className="mt-6">
-                  <button
-                    onClick={() => setShowArchived(o => !o)}
-                    className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                  >
-                    {showArchived ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                    <Archive size={15} />
-                    <span>Archivierte Turniere ({archived.length})</span>
-                  </button>
-                  {showArchived && (
-                    <div className="mt-3 space-y-2 opacity-70">
-                      {archived.map(t => (
-                        <TournamentCard key={t.id} tournament={t} onClick={() => setSelectedId(t.id)} archived />
-                      ))}
+          {isAdmin && templates.length > 0 && (
+            <div className="mt-4">
+              <button
+                onClick={() => setShowTemplates(o => !o)}
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-2"
+              >
+                {showTemplates ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <FileText size={15} />
+                <span>Vorlagen ({templates.length})</span>
+              </button>
+              {showTemplates && (
+                <div className="space-y-2">
+                  {templates.map(tmpl => (
+                    <div key={tmpl.id} className="bg-white rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm">
+                      <FileText size={16} className="text-gray-400 shrink-0" />
+                      <span className="flex-1 text-sm font-medium text-gray-800">{tmpl.name}</span>
+                      {tmpl.previous_source_tournament_id && (
+                        restoreConfirmId === tmpl.id ? (
+                          <span className="flex items-center gap-2 text-xs">
+                            <span className="text-gray-600">Wiederherstellen?</span>
+                            <button onClick={async () => { await restoreTemplate(tmpl.id); setRestoreConfirmId(null) }} className="px-2 py-1 rounded bg-amber-500 text-white hover:bg-amber-600">Ja</button>
+                            <button onClick={() => setRestoreConfirmId(null)} className="px-2 py-1 rounded border border-gray-300 text-gray-700">Nein</button>
+                          </span>
+                        ) : (
+                          <button onClick={() => setRestoreConfirmId(tmpl.id)} className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 border border-amber-200 px-2 py-1 rounded-lg">
+                            <RotateCcw size={12} /> Wiederherstellen
+                          </button>
+                        )
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
               )}
-            </>
+            </div>
           )}
         </>
       )}
 
-      {/* VORLAGEN-PANEL (nur Admin/Vorstandschaft, nur wenn Templates vorhanden) */}
-      {mainTab === 'uebersicht' && isAdmin && templates.length > 0 && (
-        <div className="mt-6">
-          <button
-            onClick={() => setShowTemplates(o => !o)}
-            className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-          >
-            {showTemplates ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            <FileText size={15} />
-            <span>Vorlagen ({templates.length})</span>
-          </button>
-          {showTemplates && (
-            <div className="mt-3 space-y-2">
-              {templates.map(tmpl => (
-                <div
-                  key={tmpl.id}
-                  className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 flex items-center gap-3"
-                >
-                  <FileText size={16} className="text-gray-400 dark:text-gray-500 shrink-0" />
-                  <span className="flex-1 text-sm font-medium text-gray-800 dark:text-white">{tmpl.name}</span>
-                  {tmpl.previous_source_tournament_id && (
-                    restoreConfirmId === tmpl.id ? (
-                      <span className="flex items-center gap-2 text-xs">
-                        <span className="text-gray-600 dark:text-gray-300">Wirklich wiederherstellen?</span>
-                        <button
-                          onClick={async () => { await restoreTemplate(tmpl.id); setRestoreConfirmId(null) }}
-                          className="px-2 py-1 rounded bg-orange-600 text-white hover:bg-orange-700"
-                        >Ja</button>
-                        <button
-                          onClick={() => setRestoreConfirmId(null)}
-                          className="px-2 py-1 rounded border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
-                        >Nein</button>
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => setRestoreConfirmId(tmpl.id)}
-                        className="flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700 border border-orange-200 dark:border-orange-700 px-2 py-1 rounded-lg"
-                        title="Vorherige Vorlage wiederherstellen"
-                      >
-                        <RotateCcw size={12} /> Wiederherstellen
-                      </button>
-                    )
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {mainTab === 'meine' && <MyTasks currentUser={user} />}
 
-      {/* MEINE AUFGABEN */}
-      {mainTab === 'meine' && (
-        <MyTasks currentUser={user} />
-      )}
-
-      {/* Create form */}
       {showForm && (
         <TournamentForm
           templates={templates}
-          onSave={async (name, date, templateId) => {
-            await createTournament(name, date, templateId, user.id)
-          }}
+          onSave={async (name, date, templateId) => { await createTournament(name, date, templateId, user.id) }}
           onClose={() => setShowForm(false)}
         />
       )}
@@ -202,24 +177,38 @@ export default function Tournament({ user, onNavigate }: Props) {
   )
 }
 
-function TournamentCard({ tournament, onClick, archived }: { tournament: Tournament; onClick: () => void; archived?: boolean }) {
-  const dateStr = new Date(tournament.date).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+function TournamentCard({ tournament, onClick, archived, isNext }: {
+  tournament: Tournament
+  onClick: () => void
+  archived?: boolean
+  isNext?: boolean
+}) {
+  const dateStr = new Date(tournament.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'long', year: 'numeric' })
+
+  if (archived) {
+    return (
+      <button onClick={onClick} className="w-full text-left bg-white border border-gray-200 rounded-xl px-4 py-3.5 hover:border-gray-300 transition-all group">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-gray-500 text-sm truncate">{tournament.name}</p>
+            <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1"><Calendar size={11} /> {dateStr}</p>
+          </div>
+          <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-400 shrink-0" />
+        </div>
+      </button>
+    )
+  }
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left bg-white border border-gray-200 rounded-xl px-4 py-3.5 hover:border-navy-200 hover:shadow-sm transition-all group"
-    >
-      <div className="flex items-center gap-3">
-        <div className={`w-2 h-2 rounded-full shrink-0 ${archived ? 'bg-gray-300' : 'bg-navy-600'}`} />
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 text-sm group-hover:text-navy-700 truncate">
-            {tournament.name}
-          </p>
-          <p className="text-xs text-gray-500 mt-0.5">📅 {dateStr}</p>
-        </div>
-        <ChevronRight size={16} className="text-gray-400 group-hover:text-navy-600 shrink-0" />
-      </div>
+    <button onClick={onClick} className="w-full text-left bg-navy-700 hover:bg-navy-800 rounded-2xl p-5 transition-colors">
+      {isNext && (
+        <p className="text-xs font-semibold tracking-widest uppercase text-amber-400 mb-1">Nächstes Turnier</p>
+      )}
+      <h2 className="text-lg font-bold text-white leading-snug mb-3" style={{ fontFamily: "'Lora', serif" }}>
+        {tournament.name}
+      </h2>
+      <p className="text-sm text-navy-200 flex items-center gap-1.5"><Calendar size={13} /> {dateStr}</p>
     </button>
   )
 }

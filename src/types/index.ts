@@ -9,12 +9,13 @@ export interface Category {
 
 export interface ShoppingListItem {
   id: string
-  equipment_id: string
+  equipment_id: string | null
+  note: string | null
   added_by: string
   status: 'open' | 'bought'
   created_at: string
   updated_at: string
-  equipment?: { name: string; description: string | null }
+  equipment?: { name: string; description: string | null; count: number }
   user?: { username: string }
 }
 

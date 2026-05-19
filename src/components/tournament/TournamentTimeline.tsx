@@ -1,3 +1,4 @@
+import { Calendar } from 'lucide-react'
 import type { TournamentTask, TournamentCategory } from '../../types/tournament'
 import type { User } from '../../types'
 import { isOverdue } from '../../hooks/useTournamentDetail'
@@ -8,16 +9,10 @@ interface Props {
   users: User[]
 }
 
-const STATUS_COLORS = {
-  nicht_begonnen: 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600',
-  in_arbeit:      'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-300 dark:border-yellow-700',
-  abgeschlossen:  'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700',
-}
-
-const DOT_COLORS = {
-  nicht_begonnen: 'bg-gray-400',
-  in_arbeit:      'bg-yellow-400',
-  abgeschlossen:  'bg-green-500',
+const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  nicht_begonnen: { bg: 'bg-gray-100',   text: 'text-gray-600',   label: 'Offen' },
+  in_arbeit:      { bg: 'bg-amber-100',  text: 'text-amber-700',  label: 'In Arbeit' },
+  abgeschlossen:  { bg: 'bg-green-100',  text: 'text-green-700',  label: 'Erledigt' },
 }
 
 export default function TournamentTimeline({ tasks, categories, users }: Props) {
@@ -29,9 +24,9 @@ export default function TournamentTimeline({ tasks, categories, users }: Props) 
 
   if (withDate.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400 dark:text-gray-500">
-        <p className="text-lg">📅</p>
-        <p className="mt-1 text-sm">Keine Aufgaben mit Zieldatum vorhanden.</p>
+      <div className="text-center py-12 text-gray-400">
+        <Calendar size={32} className="mx-auto mb-3 opacity-30" />
+        <p className="text-sm">Keine Aufgaben mit Zieldatum vorhanden.</p>
         <p className="text-xs mt-1">Weise Aufgaben ein Datum zu, um sie hier zu sehen.</p>
       </div>
     )
@@ -46,8 +41,7 @@ export default function TournamentTimeline({ tasks, categories, users }: Props) 
 
   return (
     <div className="relative pl-6">
-      {/* Vertical line */}
-      <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700" />
+      <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-cream-200 rounded-full" />
 
       <div className="space-y-6">
         {Object.entries(groups).map(([date, dateTasks]) => {
@@ -56,33 +50,33 @@ export default function TournamentTimeline({ tasks, categories, users }: Props) 
 
           return (
             <div key={date} className="relative">
-              {/* Dot */}
-              <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-blue-500 border-2 border-white dark:border-gray-900 z-10" />
+              <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-navy-600 border-2 border-cream-50 z-10" />
+              <p className="text-xs font-semibold text-navy-700 mb-2">{label}</p>
 
-              <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2">{label}</p>
-
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {dateTasks.map(task => {
                   const overdue = isOverdue(task)
-                  const borderColor = overdue
-                    ? 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-700'
-                    : STATUS_COLORS[task.status]
-                  const dotColor = overdue ? 'bg-red-500' : DOT_COLORS[task.status]
+                  const badge = STATUS_BADGE[task.status] ?? STATUS_BADGE.nicht_begonnen
                   const responsible = task.responsible_user_id
                     ? users.find(u => u.id === task.responsible_user_id)?.username
                     : null
 
                   return (
-                    <div key={task.id} className={`border rounded-lg px-3 py-2 flex items-start gap-2.5 ${borderColor}`}>
-                      <div className={`shrink-0 w-2.5 h-2.5 rounded-full mt-1 ${dotColor}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm text-gray-900 dark:text-white ${task.status === 'abgeschlossen' ? 'line-through opacity-60' : ''}`}>
-                          {task.title}
-                        </p>
-                        <div className="flex flex-wrap gap-x-3 mt-0.5">
-                          <span className="text-xs text-gray-400 dark:text-gray-500">{catMap[task.category_id] ?? '—'}</span>
-                          {responsible && <span className="text-xs text-blue-600 dark:text-blue-400">👤 {responsible}</span>}
-                          {overdue && <span className="text-xs text-red-600 dark:text-red-400 font-medium">Überfällig</span>}
+                    <div key={task.id} className={`bg-white rounded-xl px-4 py-3 shadow-sm ${overdue ? 'border-l-4 border-red-400' : ''}`}>
+                      <div className="flex items-start gap-3">
+                        <span className={`shrink-0 mt-0.5 text-xs px-2 py-0.5 rounded-full font-medium ${badge.bg} ${badge.text}`}>
+                          {overdue ? 'Überfällig' : badge.label}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium text-gray-900 ${task.status === 'abgeschlossen' ? 'line-through text-gray-400' : ''}`}>
+                            {task.title}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            <span className="text-xs text-gray-400">{catMap[task.category_id] ?? '—'}</span>
+                            {responsible && (
+                              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{responsible}</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

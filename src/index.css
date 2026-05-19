@@ -2,6 +2,7 @@
 
 body {
   font-family: 'Manrope', sans-serif;
+  background-color: #f0e8d8;
 }
 
 button, input, select, textarea {
@@ -18,4 +19,5 @@ button, input, select, textarea {
   --color-navy-900: #12203c;
   --color-cream-50: #f0e8d8;
   --color-cream-100: #e8dcc8;
+  --color-cream-200: #ddd0b8;
 }
