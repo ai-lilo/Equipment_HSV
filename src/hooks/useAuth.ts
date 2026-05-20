@@ -1,33 +1,69 @@
 import { useState, useEffect } from 'react'
-import { getSession, login as authLogin, logout as authLogout } from '../lib/auth'
+import { supabase } from '../lib/supabase'
+import { sendLoginOTP, verifyLoginOTP, getSessionUser, logout as authLogout } from '../lib/auth'
 import type { User } from '../types'
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(() => getSession())
-  const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [otpEmail, setOtpEmail] = useState<string | null>(null)
 
   useEffect(() => {
-    setUser(getSession())
+    getSessionUser().then(u => {
+      setUser(u)
+      setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user?.email) {
+        const u = await getSessionUser()
+        setUser(u)
+      } else {
+        setUser(null)
+      }
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
-  async function login(username: string) {
+  async function sendOTP(email: string) {
     setLoading(true)
     setError(null)
     try {
-      const u = await authLogin(username)
-      setUser(u)
+      await sendLoginOTP(email)
+      setOtpEmail(email)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Fehler beim Anmelden')
+      setError(e instanceof Error ? e.message : 'Fehler beim Senden des Codes')
     } finally {
       setLoading(false)
     }
   }
 
-  function logout() {
-    authLogout()
-    setUser(null)
+  async function verifyOTP(token: string) {
+    if (!otpEmail) return
+    setLoading(true)
+    setError(null)
+    try {
+      const u = await verifyLoginOTP(otpEmail, token)
+      setUser(u)
+      setOtpEmail(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Falscher Code')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  return { user, loading, error, login, logout }
+  function resetOTP() {
+    setOtpEmail(null)
+    setError(null)
+  }
+
+  async function logout() {
+    await authLogout()
+    setUser(null)
+    setOtpEmail(null)
+  }
+
+  return { user, loading, error, otpEmail, sendOTP, verifyOTP, resetOTP, logout }
 }

@@ -22,6 +22,7 @@ export interface ShoppingListItem {
 export interface User {
   id: string
   username: string
+  email: string | null
   role: Role
   created_at: string
   push_subscription: string | null

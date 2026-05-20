@@ -15,7 +15,7 @@ interface Props {
 type MainTab = 'uebersicht' | 'meine'
 
 export default function Tournament({ user, onNavigate }: Props) {
-  const isAdmin = user.role === 'ADMIN' || user.role === 'MEMBER'
+  const isAdmin = user.role === 'ADMIN'
   const { tournaments, templates, loading, createTournament, updateTournament, archiveTournament, unarchiveTournament, deleteTournament, createTemplateFromTournament, replaceTemplate, restoreTemplate } = useTournaments()
 
   const [mainTab, setMainTab] = useState<MainTab>('uebersicht')

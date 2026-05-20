@@ -1,5 +1,23 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Check, X, FileDown, MessageCircle, Clock, User, GripVertical, AlertCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, FileDown, MessageCircle, Clock, GripVertical, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
+
+const MEMBER_COLORS = [
+  'bg-amber-100 text-amber-800',
+  'bg-teal-100 text-teal-800',
+  'bg-rose-100 text-rose-800',
+  'bg-purple-100 text-purple-800',
+  'bg-blue-100 text-blue-800',
+  'bg-emerald-100 text-emerald-800',
+  'bg-orange-100 text-orange-800',
+  'bg-pink-100 text-pink-800',
+  'bg-indigo-100 text-indigo-800',
+  'bg-lime-100 text-lime-800',
+]
+
+function memberColor(memberId: string): string {
+  const hash = memberId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  return MEMBER_COLORS[hash % MEMBER_COLORS.length]
+}
 import type { TournamentHelper, ClubMember } from '../../types/tournament'
 import { exportHelperListPDF } from '../../lib/tournamentPdf'
 
@@ -7,11 +25,13 @@ interface Props {
   tournamentName: string
   helpers: TournamentHelper[]
   members: ClubMember[]
+  availability: string[]
   isAdmin: boolean
   onAdd: (role: string, member_id?: string, time_start?: string, time_end?: string) => Promise<void>
   onUpdate: (id: string, changes: Partial<Pick<TournamentHelper, 'role' | 'member_id' | 'time_start' | 'time_end'>>) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onReorder: (orderedIds: string[]) => Promise<void>
+  onToggleAvailability: (memberId: string) => Promise<void>
 }
 
 const inputCls = 'w-full rounded-xl px-4 py-3 text-gray-900 bg-cream-100 border-0 focus:outline-none focus:ring-2 focus:ring-navy-700 text-sm'
@@ -45,8 +65,9 @@ function hasConflict(helper: TournamentHelper, all: TournamentHelper[]): boolean
   )
 }
 
-export default function HelferTab({ tournamentName, helpers, members, isAdmin, onAdd, onUpdate, onDelete, onReorder }: Props) {
+export default function HelferTab({ tournamentName, helpers, members, availability, isAdmin, onAdd, onUpdate, onDelete, onReorder, onToggleAvailability }: Props) {
   const [showForm, setShowForm] = useState(false)
+  const [poolOpen, setPoolOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [formRole, setFormRole] = useState('')
   const [formMemberId, setFormMemberId] = useState('')
@@ -124,14 +145,30 @@ export default function HelferTab({ tournamentName, helpers, members, isAdmin, o
   }
 
   function shareWhatsApp() {
-    const lines = helpers.map((h, i) => {
-      let line = `${i + 1}. ${h.role ?? '(keine Aufgabe)'}`
-      if (h.time_start && h.time_end) line += ` [${formatTimeRange(h.time_start, h.time_end)}]`
-      const name = h.member?.name
-      if (name) line += ` – ${name}`
-      return line
-    }).join('\n')
-    const text = `Helferliste: ${tournamentName}\n\n${lines}`
+    const byPerson: Record<string, { name: string; entries: string[] }> = {}
+    const unassigned: string[] = []
+
+    for (const h of helpers) {
+      const task = h.role ?? '(keine Aufgabe)'
+      const time = h.time_start && h.time_end ? ` [${formatTimeRange(h.time_start, h.time_end)}]` : ''
+      const entry = `  • ${task}${time}`
+      if (h.member_id && h.member?.name) {
+        if (!byPerson[h.member_id]) byPerson[h.member_id] = { name: h.member.name, entries: [] }
+        byPerson[h.member_id].entries.push(entry)
+      } else {
+        unassigned.push(entry)
+      }
+    }
+
+    const sections: string[] = []
+    for (const { name, entries } of Object.values(byPerson)) {
+      sections.push(`${name}:\n${entries.join('\n')}`)
+    }
+    if (unassigned.length > 0) {
+      sections.push(`(keine Person zugewiesen):\n${unassigned.join('\n')}`)
+    }
+
+    const text = `Helferliste: ${tournamentName}\n\n${sections.join('\n\n')}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
@@ -178,6 +215,7 @@ export default function HelferTab({ tournamentName, helpers, members, isAdmin, o
         {helpers.map(helper => {
           const conflict = hasConflict(helper, helpers)
           const memberName = helper.member?.name
+          const colorCls = helper.member_id ? memberColor(helper.member_id) : 'bg-gray-100 text-gray-400'
           return (
             <div
               key={helper.id}
@@ -199,21 +237,15 @@ export default function HelferTab({ tournamentName, helpers, members, isAdmin, o
                     </span>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                  {helper.time_start && helper.time_end && (
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <Clock size={11} /> {formatTimeRange(helper.time_start, helper.time_end)}
-                    </span>
-                  )}
-                  {memberName ? (
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <User size={11} /> {memberName}
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-400">Noch keine Person zugewiesen</span>
-                  )}
-                </div>
+                {helper.time_start && helper.time_end && (
+                  <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                    <Clock size={11} /> {formatTimeRange(helper.time_start, helper.time_end)}
+                  </span>
+                )}
               </div>
+              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${colorCls}`}>
+                {memberName ?? 'Nicht zugewiesen'}
+              </span>
               {isAdmin && (
                 <div className="flex items-center gap-1 shrink-0">
                   <button
@@ -243,6 +275,54 @@ export default function HelferTab({ tournamentName, helpers, members, isAdmin, o
           )
         })}
       </div>
+
+      {/* Verfügbare Personen Pool */}
+      {isAdmin && (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <button
+            onClick={() => setPoolOpen(o => !o)}
+            className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+          >
+            {poolOpen ? <ChevronDown size={16} className="text-gray-400 shrink-0" /> : <ChevronRight size={16} className="text-gray-400 shrink-0" />}
+            <span className="text-sm font-semibold text-gray-800">Verfügbare Personen heute</span>
+            <span className="ml-auto text-xs text-gray-400 shrink-0">{availability.length} ausgewählt</span>
+          </button>
+          {poolOpen && (
+            <div className="border-t border-gray-100 px-4 py-3 space-y-2">
+              {members.map(m => {
+                const isAvail = availability.includes(m.id)
+                const isAssigned = helpers.some(h => h.member_id === m.id)
+                return (
+                  <label key={m.id} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isAvail}
+                      onChange={() => onToggleAvailability(m.id)}
+                      className="w-4 h-4 rounded accent-navy-700"
+                    />
+                    <span className="flex-1 text-sm text-gray-800">{m.name}</span>
+                    {isAvail && !isAssigned && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">noch nicht eingeplant</span>
+                    )}
+                    {isAvail && isAssigned && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">eingeplant</span>
+                    )}
+                  </label>
+                )
+              })}
+              {availability.length > 0 && (() => {
+                const unplanned = members.filter(m => availability.includes(m.id) && !helpers.some(h => h.member_id === m.id))
+                if (unplanned.length === 0) return null
+                return (
+                  <p className="mt-3 pt-3 border-t border-gray-100 text-xs text-amber-700 font-medium">
+                    Noch nicht eingeplant: {unplanned.map(m => m.name).join(', ')}
+                  </p>
+                )
+              })()}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add/Edit form dialog */}
       {showForm && (

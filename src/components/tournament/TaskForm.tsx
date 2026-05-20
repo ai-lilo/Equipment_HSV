@@ -1,8 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Trash2 } from 'lucide-react'
-import flatpickr from 'flatpickr'
-import { German } from 'flatpickr/dist/l10n/de.js'
-import 'flatpickr/dist/flatpickr.min.css'
 import type { User } from '../../types'
 import type { TournamentTask, TaskStatus } from '../../types/tournament'
 import EquipmentLinker from './EquipmentLinker'
@@ -45,8 +42,6 @@ export default function TaskForm({ task, categoryId: _categoryId, users, current
   const [notes, setNotes] = useState(task?.notes ?? '')
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const dateInputRef = useRef<HTMLInputElement>(null)
-  const fpRef = useRef<flatpickr.Instance | null>(null)
 
   useEffect(() => {
     setTitle(task?.title ?? '')
@@ -55,29 +50,6 @@ export default function TaskForm({ task, categoryId: _categoryId, users, current
     setDueDate(task?.due_date ?? '')
     setNotes(task?.notes ?? '')
   }, [task])
-
-  useEffect(() => {
-    if (!dateInputRef.current) return
-    fpRef.current = flatpickr(dateInputRef.current, {
-      locale: German,
-      dateFormat: 'd.m.Y',
-      defaultDate: dueDate || undefined,
-      onChange: (dates) => {
-        if (dates[0]) {
-          const d = dates[0]
-          const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-          setDueDate(iso)
-        } else {
-          setDueDate('')
-        }
-      },
-    }) as flatpickr.Instance
-    return () => { fpRef.current?.destroy() }
-  }, [])
-
-  useEffect(() => {
-    fpRef.current?.setDate(dueDate || '', false)
-  }, [dueDate])
 
   async function handleSave() {
     if (!title.trim()) return
@@ -160,15 +132,15 @@ export default function TaskForm({ task, categoryId: _categoryId, users, current
             <Field label="Zieldatum">
               <div className="relative">
                 <input
-                  ref={dateInputRef}
-                  readOnly
-                  placeholder="TT.MM.JJJJ"
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
                   className={inputCls}
                 />
                 {dueDate && (
                   <button
                     type="button"
-                    onClick={() => { setDueDate(''); fpRef.current?.clear() }}
+                    onClick={() => setDueDate('')}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-red-500"
                   >
                     × entfernen

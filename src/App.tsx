@@ -16,7 +16,7 @@ function getUrlFilter() {
 }
 
 export default function App() {
-  const { user, loading, error, login, logout } = useAuth()
+  const { user, loading, error, otpEmail, sendOTP, verifyOTP, resetOTP, logout } = useAuth()
   const [page, setPage] = useState('dashboard')
   const urlFilter = getUrlFilter()
 
@@ -26,8 +26,12 @@ export default function App() {
     }
   }, [])
 
+  if (loading && !user) {
+    return <div className="min-h-screen bg-navy-700" />
+  }
+
   if (!user) {
-    return <Login onLogin={login} error={error} loading={loading} />
+    return <Login otpEmail={otpEmail} onSendOTP={sendOTP} onVerifyOTP={verifyOTP} onResetOTP={resetOTP} error={error} loading={loading} />
   }
 
   return (

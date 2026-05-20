@@ -1,37 +1,45 @@
 import { supabase } from './supabase'
 import type { User } from '../types'
 
-const SESSION_KEY = 'hsv_user'
-
-export async function login(username: string): Promise<User> {
-  const { data, error } = await supabase
+async function loadUserByEmail(email: string): Promise<User | null> {
+  const { data } = await supabase
     .from('users')
     .select('*')
-    .eq('username', username)
-    .single()
+    .eq('email', email.toLowerCase().trim())
+    .maybeSingle()
+  return data as User | null
+}
 
-  if (error || !data) {
-    throw new Error('Benutzername nicht gefunden')
+export async function sendLoginOTP(email: string): Promise<void> {
+  const user = await loadUserByEmail(email)
+  if (!user) {
+    throw new Error('Diese E-Mail ist nicht registriert. Bitte Admin kontaktieren.')
   }
-
-  localStorage.setItem(SESSION_KEY, JSON.stringify(data))
-  return data as User
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.toLowerCase().trim(),
+    options: { shouldCreateUser: true },
+  })
+  if (error) throw new Error('Code konnte nicht gesendet werden: ' + error.message)
 }
 
-export function logout() {
-  localStorage.removeItem(SESSION_KEY)
+export async function verifyLoginOTP(email: string, token: string): Promise<User> {
+  const { error } = await supabase.auth.verifyOtp({
+    email: email.toLowerCase().trim(),
+    token,
+    type: 'email',
+  })
+  if (error) throw new Error('Ungültiger oder abgelaufener Code. Bitte erneut versuchen.')
+  const user = await loadUserByEmail(email)
+  if (!user) throw new Error('Benutzer nicht gefunden.')
+  return user
 }
 
-export function getSession(): User | null {
-  const raw = localStorage.getItem(SESSION_KEY)
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as User
-  } catch {
-    return null
-  }
+export async function getSessionUser(): Promise<User | null> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user?.email) return null
+  return loadUserByEmail(session.user.email)
 }
 
-export function updateSession(user: User) {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(user))
+export async function logout(): Promise<void> {
+  await supabase.auth.signOut()
 }

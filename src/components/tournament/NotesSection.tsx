@@ -28,9 +28,9 @@ export default function NotesSection({ note, bestPractices, isAdmin, onSaveNote 
           value={content}
           onChange={e => setContent(e.target.value)}
           disabled={!isAdmin}
-          rows={6}
+          rows={12}
           placeholder={isAdmin ? 'Notizen zur Veranstaltung, Verbesserungsideen, Besonderheiten...' : 'Keine Notizen vorhanden.'}
-          className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-navy-700 resize-none disabled:opacity-60"
+          className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-navy-700 resize-y disabled:opacity-60"
         />
         {isAdmin && (
           <div className="flex gap-2 mt-2">

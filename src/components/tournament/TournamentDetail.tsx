@@ -36,8 +36,8 @@ type ArchiveStep = 'choice' | 'new-name' | 'replace-pick' | 'replace-confirm'
 export default function TournamentDetail({
   tournament, currentUser, templates, onBack, onArchive, onUnarchive, onDelete, onCreateTemplate, onReplaceTemplate, onUpdateTournament, onNavigateEquipment
 }: Props) {
-  const isAdmin = currentUser.role === 'ADMIN' || currentUser.role === 'MEMBER'
-  const { categories, tasks, helpers, note, bestPractices, loading, addCategory, addChecklistCategory, renameCategory, deleteCategory, reorderCategories, addTask, updateTask, deleteTask, addHelper, updateHelper, deleteHelper, reorderHelpers, saveNote } = useTournamentDetail(tournament.id)
+  const isAdmin = currentUser.role === 'ADMIN'
+  const { categories, tasks, helpers, availability, note, bestPractices, loading, addCategory, addChecklistCategory, renameCategory, deleteCategory, reorderCategories, addTask, updateTask, deleteTask, addHelper, updateHelper, deleteHelper, reorderHelpers, saveNote, toggleAvailability } = useTournamentDetail(tournament.id)
   const users = useAllUsers()
   const { members } = useClubMembers()
 
@@ -183,12 +183,12 @@ export default function TournamentDetail({
       </div>
 
       {/* Inner tabs */}
-      <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1">
+      <div className="grid grid-cols-3 gap-1.5 mb-5">
         {tabs.map(tab => (
           <button
             key={tab.key}
             onClick={() => setInnerTab(tab.key)}
-            className={`shrink-0 px-4 py-2 text-sm font-medium rounded-xl transition-colors ${
+            className={`px-2 py-2 text-xs font-medium rounded-xl transition-colors text-center ${
               innerTab === tab.key
                 ? 'bg-navy-700 text-white'
                 : 'bg-cream-200 text-gray-600 hover:bg-cream-100'
@@ -317,11 +317,13 @@ export default function TournamentDetail({
             tournamentName={tournament.name}
             helpers={helpers}
             members={members}
+            availability={availability}
             isAdmin={isAdmin}
             onAdd={addHelper}
             onUpdate={updateHelper}
             onDelete={deleteHelper}
             onReorder={reorderHelpers}
+            onToggleAvailability={toggleAvailability}
           />
         )
       )}

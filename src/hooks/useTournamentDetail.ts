@@ -6,6 +6,7 @@ export function useTournamentDetail(tournamentId: string | null) {
   const [categories, setCategories] = useState<TournamentCategory[]>([])
   const [tasks, setTasks] = useState<TournamentTask[]>([])
   const [helpers, setHelpers] = useState<TournamentHelper[]>([])
+  const [availability, setAvailability] = useState<string[]>([])
   const [note, setNoteState] = useState<TournamentNote | null>(null)
   const [bestPractices, setBestPractices] = useState<BestPractice[]>([])
   const [loading, setLoading] = useState(false)
@@ -13,7 +14,7 @@ export function useTournamentDetail(tournamentId: string | null) {
   const load = useCallback(async () => {
     if (!tournamentId) return
     setLoading(true)
-    const [cats, tsks, notes, bp, hlp] = await Promise.all([
+    const [cats, tsks, notes, bp, hlp, avail] = await Promise.all([
       supabase.from('tournament_categories').select('*').eq('tournament_id', tournamentId).order('sort_order'),
       supabase.from('tasks').select(`
         *,
@@ -22,12 +23,14 @@ export function useTournamentDetail(tournamentId: string | null) {
       supabase.from('tournament_notes').select('*').eq('tournament_id', tournamentId).maybeSingle(),
       supabase.from('best_practices').select('*').eq('tournament_id', tournamentId).order('generated_at', { ascending: false }),
       supabase.from('tournament_helpers').select('*, member:club_members(id, name)').eq('tournament_id', tournamentId).order('sort_order'),
+      supabase.from('tournament_helper_availability').select('member_id').eq('tournament_id', tournamentId),
     ])
     setCategories((cats.data ?? []) as TournamentCategory[])
     setTasks((tsks.data ?? []) as TournamentTask[])
     setNoteState(notes.data as TournamentNote | null)
     setBestPractices((bp.data ?? []) as BestPractice[])
     setHelpers((hlp.data ?? []) as TournamentHelper[])
+    setAvailability((avail.data ?? []).map((r: { member_id: string }) => r.member_id))
     setLoading(false)
   }, [tournamentId])
 
@@ -153,10 +156,26 @@ export function useTournamentDetail(tournamentId: string | null) {
     if (data) setBestPractices(prev => [data as BestPractice, ...prev])
   }
 
+  async function toggleAvailability(memberId: string) {
+    if (!tournamentId) return
+    if (availability.includes(memberId)) {
+      await supabase.from('tournament_helper_availability')
+        .delete()
+        .eq('tournament_id', tournamentId)
+        .eq('member_id', memberId)
+      setAvailability(prev => prev.filter(id => id !== memberId))
+    } else {
+      await supabase.from('tournament_helper_availability')
+        .insert({ tournament_id: tournamentId, member_id: memberId })
+      setAvailability(prev => [...prev, memberId])
+    }
+  }
+
   return {
     categories,
     tasks,
     helpers,
+    availability,
     note,
     bestPractices,
     loading,
@@ -175,6 +194,7 @@ export function useTournamentDetail(tournamentId: string | null) {
     reorderHelpers,
     saveNote,
     saveBestPractice,
+    toggleAvailability,
   }
 }
 

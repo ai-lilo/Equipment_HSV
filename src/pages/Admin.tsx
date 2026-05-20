@@ -113,10 +113,12 @@ function UsersTab() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [newUsername, setNewUsername] = useState('')
+  const [newEmail, setNewEmail] = useState('')
   const [newRole, setNewRole] = useState<'VISITOR' | 'MEMBER' | 'ADMIN'>('VISITOR')
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingRole, setEditingRole] = useState<'VISITOR' | 'MEMBER' | 'ADMIN'>('VISITOR')
+  const [editingEmail, setEditingEmail] = useState('')
 
   useEffect(() => {
     supabase.from('users').select('*').order('username').then(({ data }) => {
@@ -130,18 +132,19 @@ function UsersTab() {
     setSaving(true)
     const { data } = await supabase
       .from('users')
-      .insert({ username: newUsername.trim(), role: newRole })
+      .insert({ username: newUsername.trim(), role: newRole, email: newEmail.trim() || null })
       .select()
       .single()
     if (data) setUsers(prev => [...prev, data as User].sort((a, b) => a.username.localeCompare(b.username)))
     setNewUsername('')
+    setNewEmail('')
     setShowForm(false)
     setSaving(false)
   }
 
   async function saveRole(userId: string) {
-    await supabase.from('users').update({ role: editingRole }).eq('id', userId)
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: editingRole } : u))
+    await supabase.from('users').update({ role: editingRole, email: editingEmail.trim() || null }).eq('id', userId)
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: editingRole, email: editingEmail.trim() || null } : u))
     setEditingId(null)
   }
 
@@ -167,8 +170,15 @@ function UsersTab() {
           <input
             value={newUsername}
             onChange={e => setNewUsername(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addUser()}
             placeholder="Benutzername"
+            className="w-full rounded-xl px-4 py-3 bg-cream-100 border-0 text-gray-900 focus:outline-none focus:ring-2 focus:ring-navy-700 text-sm"
+          />
+          <input
+            type="email"
+            value={newEmail}
+            onChange={e => setNewEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addUser()}
+            placeholder="E-Mail für Login (optional, später ergänzbar)"
             className="w-full rounded-xl px-4 py-3 bg-cream-100 border-0 text-gray-900 focus:outline-none focus:ring-2 focus:ring-navy-700 text-sm"
           />
           <select
@@ -210,17 +220,32 @@ function UsersTab() {
           </div>
 
           {editingId === u.id ? (
-            <select
-              value={editingRole}
-              onChange={e => setEditingRole(e.target.value as 'VISITOR' | 'MEMBER' | 'ADMIN')}
-              className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-navy-700"
-            >
-              <option value="VISITOR">Mitglied</option>
-              <option value="MEMBER">Vorstandschaft</option>
-              <option value="ADMIN">Admin</option>
-            </select>
+            <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+              <input
+                type="email"
+                value={editingEmail}
+                onChange={e => setEditingEmail(e.target.value)}
+                placeholder="E-Mail (für Login)"
+                className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-navy-700"
+              />
+              <select
+                value={editingRole}
+                onChange={e => setEditingRole(e.target.value as 'VISITOR' | 'MEMBER' | 'ADMIN')}
+                className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-navy-700"
+              >
+                <option value="VISITOR">Mitglied</option>
+                <option value="MEMBER">Vorstandschaft</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
           ) : (
-            <RoleBadge role={u.role} />
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <RoleBadge role={u.role} />
+              {u.email
+                ? <span className="text-xs text-gray-400 truncate max-w-[140px]">{u.email}</span>
+                : <span className="text-xs text-amber-500">Keine E-Mail</span>
+              }
+            </div>
           )}
 
           <div className="flex gap-1.5 shrink-0">
@@ -244,7 +269,7 @@ function UsersTab() {
             ) : (
               <>
                 <button
-                  onClick={() => { setEditingId(u.id); setEditingRole(u.role) }}
+                  onClick={() => { setEditingId(u.id); setEditingRole(u.role); setEditingEmail(u.email ?? '') }}
                   className="w-9 h-9 rounded-lg bg-cream-100 text-gray-500 flex items-center justify-center hover:bg-cream-200 transition-colors"
                   title="Rolle bearbeiten"
                 >
@@ -284,7 +309,7 @@ function UsersTab() {
                 ['Veranstaltungen einsehen',  true,  true,  true ],
                 ['Einkaufsliste',             false, true,  true ],
                 ['Inventar bearbeiten',        false, true,  true ],
-                ['Veranstaltungen verwalten', false, true,  true ],
+                ['Veranstaltungen verwalten', false, false, true ],
                 ['Kategorien verwalten',      false, false, true ],
                 ['Räume verwalten',           false, false, true ],
                 ['Benutzer verwalten',        false, false, true ],
@@ -686,7 +711,7 @@ function MitgliederTab() {
       {/* Section 1: Member management */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold tracking-widest uppercase text-gray-400">Vereinsmitglieder</p>
+          <p className="text-xs font-semibold tracking-widest uppercase text-gray-400">Vereinsmitglieder ({members.length})</p>
           <button
             onClick={openAdd}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-navy-700 text-white text-sm hover:bg-navy-800"

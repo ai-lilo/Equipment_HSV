@@ -83,7 +83,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
         <select
           value={filterRoom}
           onChange={e => setFilterRoom(e.target.value)}
-          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-navy-700"
+          className="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-navy-700"
         >
           <option value="">Alle Räume</option>
           {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -91,7 +91,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
         <select
           value={filterCategory}
           onChange={e => setFilterCategory(e.target.value)}
-          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-navy-700"
+          className="flex-1 min-w-0 border border-gray-200 rounded-xl px-4 py-2.5 bg-white text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-navy-700"
         >
           <option value="">Alle Kategorien</option>
           {categories.filter(c => c.name !== 'Verbrauchsmaterial').map(c => (
@@ -134,7 +134,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
           searchQuery={search}
           filterRoom={filterRoom}
           filterCategory={filterCategory}
-          hideEmpty={false}
+          hideEmpty={!!(filterCategory || filterRoom || search)}
           openShoppingIds={openShoppingIds}
           onEditEquipment={setEditItem}
           onAddToShoppingList={canEdit ? handleAddToShoppingList : undefined}
