@@ -88,7 +88,7 @@ export default function Login({ otpEmail, onSendOTP, onVerifyOTP, onResetOTP, er
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                maxLength={6}
+                maxLength={8}
                 value={token}
                 onChange={e => setToken(e.target.value.replace(/\D/g, ''))}
                 placeholder="123456"
