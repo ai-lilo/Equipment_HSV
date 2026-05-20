@@ -72,7 +72,7 @@ export default function Login({ otpEmail, onSendOTP, onVerifyOTP, onResetOTP, er
             </button>
 
             <p className="text-center text-xs text-gray-400">
-              Du erhältst einen 6-stelligen Code per E-Mail.
+              Du erhältst einen 8-stelligen Code per E-Mail.
             </p>
           </form>
         ) : (
