@@ -354,9 +354,11 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
                   className={inputCls}
                 >
                   <option value="">Noch nicht zugewiesen</option>
-                  {members.map(m => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
+                  {members
+                    .filter(m => availability.includes(m.id) || (editId !== null && formMemberId === m.id))
+                    .map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
                 </select>
               </Field>
               <div className="grid grid-cols-2 gap-3">
