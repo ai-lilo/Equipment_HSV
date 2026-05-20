@@ -102,23 +102,27 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
     setFormMemberId('')
     setFormTimeStart('')
     setFormTimeEnd('')
+    setSaving(false)
   }
 
   async function handleSave() {
     if (!formRole.trim()) return
     setSaving(true)
-    if (editId) {
-      await onUpdate(editId, {
-        role: formRole.trim(),
-        member_id: formMemberId || null,
-        time_start: formTimeStart || null,
-        time_end: formTimeEnd || null,
-      })
-    } else {
-      await onAdd(formRole.trim(), formMemberId || undefined, formTimeStart || undefined, formTimeEnd || undefined)
+    try {
+      if (editId) {
+        await onUpdate(editId, {
+          role: formRole.trim(),
+          member_id: formMemberId || null,
+          time_start: formTimeStart || null,
+          time_end: formTimeEnd || null,
+        })
+      } else {
+        await onAdd(formRole.trim(), formMemberId || undefined, formTimeStart || undefined, formTimeEnd || undefined)
+      }
+      cancelForm()
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    cancelForm()
   }
 
   function handleDragStart(e: React.DragEvent, id: string) {
