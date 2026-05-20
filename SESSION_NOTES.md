@@ -1,5 +1,42 @@
 # Session-Notizen — Equipment HSV Pegnitz App
 
+## 2026-05-20 — Session-Abschluss
+
+### Was wurde erledigt
+- **11 UI/Feature-Verbesserungen** (aus Plan-Session, Commit `756182e`):
+  - Inventar: `min-w-0` an Kategorie-Dropdowns — kein horizontales Scrollen mehr
+  - Inventar: Leere Räume/Schränke bei aktivem Filter ausgeblendet (`hideEmpty` dynamisch)
+  - Admin Mitglieder: Anzahl in Klammern neben "Vereinsmitglieder"
+  - Datepicker: Flatpickr durch nativen `<input type="date">` ersetzt (iOS-Bug behoben)
+  - Veranstaltung Tabs: 2×3 Grid statt horizontalem Scrollen
+  - Notizen-Textarea: `rows={12}`, `resize-y` statt `resize-none`
+  - Helfer-Pool: Neue Tabelle `tournament_helper_availability` + UI (verfügbare Personen, noch nicht eingeplant)
+  - WhatsApp-Export: Nachrichten nach Personen gruppiert statt nach Aufgaben
+  - Rechte: Vorstand (MEMBER) darf Veranstaltungen nicht mehr verwalten
+  - Helferliste: Farbige Personen-Badges rechts auf den Karten (Hash-basierte Farbzuweisung)
+- **MFA via E-Mail OTP** (Supabase Auth): Login-System komplett umgebaut — kein localStorage mehr, JWT-Sessions, 2-Schritt-Login (E-Mail → 8-stelliger Code), Admin kann E-Mail-Adressen in der App verwalten
+- **Login-Text korrigiert**: "6-stellig" → "8-stellig" (Supabase sendet 8-stellige Codes)
+- **RLS-Fix**: Nach Auth-Umstellung waren alle Tabellen für eingeloggte Nutzer (`authenticated`) nicht lesbar — alle Tabellen um `authenticated`-Policy ergänzt (via Supabase SQL Editor)
+- **Helfer-Formular**: Personen-Dropdown zeigt nur Personen aus dem Verfügbarkeits-Pool
+- **Bug-Fix Speichern-Button**: `saving`-State blieb nach fehlgeschlagenem Speichern auf `true` stecken — `cancelForm` und `handleSave` (try/finally) korrigiert
+- Migrationen: `007_helper_availability.sql`, `008_users_email.sql`
+- Commits: `756182e`, `596dde2`, `b3607b9`, `beb4051`, `c0ccea0`
+
+### Offene TODOs
+- Keine TODO/FIXME-Kommentare im Code gefunden
+- **Ausstehend (User-Aktion)**: E-Mail-Adressen für alle App-User in der App (Admin → Benutzer) nachtragen, damit alle Mitglieder sich per OTP einloggen können
+- **Supabase-Migrationen** `007` und `008` müssen im SQL Editor ausgeführt worden sein (falls noch nicht geschehen)
+
+### Nächster sinnvoller Schritt
+**E-Mail-Adressen aller User nachtragen + erste echte Helferliste mit Pool anlegen**
+
+Details:
+- Im Admin-Bereich → "Benutzer" alle fehlenden E-Mail-Adressen eintragen, damit alle Mitglieder sich einloggen können
+- Beim nächsten Turnier: Verfügbare Personen im Helfer-Pool eintragen und prüfen, ob die "noch nicht eingeplant"-Anzeige korrekt funktioniert
+- Optional: Weitere Tabellen prüfen ob sie in `categories`, `items`, `shopping_list` ebenfalls `authenticated`-Policies benötigen (falls Inventar oder Einkaufsliste nach Login leer erscheint)
+
+---
+
 ## 2026-05-19 — Session-Abschluss
 
 ### Was wurde erledigt
