@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { escapeHtml } from '../lib/escapeHtml'
 import { FileDown, History, Tag, Pencil, Trash2, Check, X, Shield, Plus, Users } from 'lucide-react'
 import { useCategories } from '../hooks/useCategories'
 import { useClubMembers } from '../hooks/useClubMembers'
@@ -425,7 +426,7 @@ function PdfTab() {
     const win = window.open('', '_blank')
     if (!win || !printRef.current) return
     win.document.write(`
-      <html><head><title>Inventarliste HSV Pegnitz</title>
+      <html><head><title>${escapeHtml('Inventarliste HSV Pegnitz')}</title>
       <style>
         body{font-family:sans-serif;padding:2rem;font-size:12px}
         h1{font-size:1.5rem;margin-bottom:1rem}

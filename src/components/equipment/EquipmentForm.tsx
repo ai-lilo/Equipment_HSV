@@ -60,11 +60,16 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
     return data.publicUrl
   }
 
+  const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
   async function handleSave() {
     if (!name.trim()) { setError('Name ist Pflichtfeld'); return }
     if (!roomId) { setError('Raum ist Pflichtfeld'); return }
     const parsedCount = parseInt(count)
     if (isNaN(parsedCount) || parsedCount < 1) { setError('Ungültige Anzahl'); return }
+    if (photoFile && !ALLOWED_MIME.includes(photoFile.type)) {
+      setError('Ungültiger Dateityp. Erlaubt: JPG, PNG, WebP, GIF'); return
+    }
 
     setSaving(true)
     setError(null)

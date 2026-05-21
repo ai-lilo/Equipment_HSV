@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import QRCode from 'qrcode'
 import { X, Printer } from 'lucide-react'
+import { escapeHtml } from '../../lib/escapeHtml'
 
 interface Props {
   label: string
@@ -21,12 +22,14 @@ export default function QRModal({ label, url, onClose }: Props) {
     const win = window.open('', '_blank')
     if (!win) return
     const dataUrl = canvasRef.current?.toDataURL() ?? ''
+    const safeLabel = escapeHtml(label)
+    const safeUrl = escapeHtml(url)
     win.document.write(`
-      <html><head><title>${label}</title></head>
+      <html><head><title>${safeLabel}</title></head>
       <body style="text-align:center;font-family:sans-serif;padding:2rem">
-        <h2>${label}</h2>
+        <h2>${safeLabel}</h2>
         <img src="${dataUrl}" style="width:256px;height:256px" />
-        <p style="font-size:0.75rem;color:#666;word-break:break-all">${url}</p>
+        <p style="font-size:0.75rem;color:#666;word-break:break-all">${safeUrl}</p>
         <script>window.onload=()=>window.print()</script>
       </body></html>
     `)
