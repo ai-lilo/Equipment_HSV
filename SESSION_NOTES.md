@@ -1,5 +1,44 @@
 # Session-Notizen — Equipment HSV Pegnitz App
 
+## 2026-05-21 — Session-Abschluss
+
+### Was wurde erledigt
+
+**3 UI-Korrekturen** (Commit `1ea78e3`):
+- PDF-Export: Rote kursive Defekt-Notizen (`↳ ...`) werden nicht mehr angezeigt
+- Login: Label "6-stelliger Code" → "8-stelliger Code", Placeholder angepasst
+- Aufgabe bearbeiten: Doppeltes "Inventar"-Label entfernt (EquipmentLinker hat eigenen Header "Benötigtes Inventar")
+
+**Performance-Verbesserungen** (Commit `1ea78e3`):
+- `sonner` Toast-Bibliothek installiert; `<Toaster>` in App.tsx eingebunden
+- `src/lib/handleError.ts` erstellt: zentrales Supabase-Error-Handling mit Toast-Anzeige; bei Session-Ablauf automatischer Reload nach 2,5 s
+- Alle Supabase-Mutations in `useInventory.ts`, `useTournamentDetail.ts`, `useTournaments.ts` zeigen jetzt sichtbare Fehlermeldungen statt still zu versagen
+- `useInventory`: `select('*')` durch konkrete Spaltenauswahl ersetzt
+- SQL-Migration `20260521_add_performance_indexes.sql` erstellt: 9 FK-Indizes für equipment, cabinets, tasks, tournament_categories, tournament_helpers, change_log
+
+**Security-Härtung** (Commit `3c32c97`):
+- `src/lib/escapeHtml.ts` erstellt
+- XSS-Fix in `QRModal.tsx`: `label` und `url` werden vor `document.write()` escaped
+- XSS-Fix in `Admin.tsx`: Drucken-Titel wird escaped
+- `auth.ts`: `shouldCreateUser: true` → `false` (verhindert ungewollte Supabase-Auth-Einträge)
+- `EquipmentForm.tsx`: MIME-Typ-Allowlist (JPEG/PNG/WebP/GIF) vor Foto-Upload
+- SQL-Migration `20260521_security_rls.sql` erstellt + **im Supabase Dashboard ausgeführt**: Schreib-Policies auf `authenticated` eingeschränkt, `users`-Tabelle nur noch für ADMIN schreibbar, Storage-Policies gehärtet
+
+### Offene TODOs
+- Keine TODO/FIXME-Kommentare im Code gefunden
+- **Ausstehend prüfen**: Performance-Index-Migration `20260521_add_performance_indexes.sql` — falls noch nicht im Supabase SQL Editor ausgeführt, nachholen (größter Performance-Hebel)
+- **Ausstehend (User-Aktion)**: E-Mail-Adressen aller User im Admin-Bereich eintragen, damit alle per OTP einloggen können
+
+### Nächster sinnvoller Schritt
+**App nach Security/Performance-Session vollständig durchtesten + Index-Migration ausführen**
+
+Details:
+- Performance-Indizes im Supabase SQL Editor ausführen falls noch nicht geschehen (`supabase/migrations/20260521_add_performance_indexes.sql`) — danach Ladezeiten vergleichen
+- Alle geänderten Bereiche manuell testen: QR-Druck, PDF-Export, Aufgabe bearbeiten, Foto-Upload, Login
+- Danach nächster inhaltlicher Schritt: **Einkaufsliste / Shopping-List-Feature** ausbauen oder **Benachrichtigungen bei Aufgaben-Zuweisung** (Push oder E-Mail) — je nach Priorität des Vereins
+
+---
+
 ## 2026-05-20 — Session-Abschluss
 
 ### Was wurde erledigt
