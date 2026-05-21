@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { handleSupabaseError } from '../lib/handleError'
 import type { Tournament, TournamentTemplate, TournamentCategory, TournamentTask, TournamentHelper } from '../types/tournament'
 
 export function useTournaments() {
@@ -20,6 +21,8 @@ export function useTournaments() {
         .select('*')
         .order('name'),
     ])
+    handleSupabaseError(t.error, 'Turniere laden')
+    handleSupabaseError(tmpl.error, 'Vorlagen laden')
     setTournaments((t.data ?? []) as Tournament[])
     setTemplates((tmpl.data ?? []) as TournamentTemplate[])
     setLoading(false)
@@ -34,7 +37,7 @@ export function useTournaments() {
       .select()
       .single()
 
-    if (error || !newT) return null
+    if (error || !newT) { handleSupabaseError(error, 'Turnier erstellen'); return null }
 
     if (templateId) {
       await copyFromTemplate(newT.id, templateId)
@@ -224,22 +227,26 @@ export function useTournaments() {
   }
 
   async function archiveTournament(id: string) {
-    await supabase.from('tournaments').update({ archived: true }).eq('id', id)
+    const { error } = await supabase.from('tournaments').update({ archived: true }).eq('id', id)
+    if (error) { handleSupabaseError(error, 'Turnier archivieren'); return }
     await load()
   }
 
   async function unarchiveTournament(id: string) {
-    await supabase.from('tournaments').update({ archived: false }).eq('id', id)
+    const { error } = await supabase.from('tournaments').update({ archived: false }).eq('id', id)
+    if (error) { handleSupabaseError(error, 'Turnier reaktivieren'); return }
     await load()
   }
 
   async function deleteTournament(id: string) {
-    await supabase.from('tournaments').delete().eq('id', id)
+    const { error } = await supabase.from('tournaments').delete().eq('id', id)
+    if (error) { handleSupabaseError(error, 'Turnier löschen'); return }
     await load()
   }
 
   async function updateTournament(id: string, name: string, date: string) {
-    await supabase.from('tournaments').update({ name, date }).eq('id', id)
+    const { error } = await supabase.from('tournaments').update({ name, date }).eq('id', id)
+    if (error) { handleSupabaseError(error, 'Turnier speichern'); return }
     setTournaments(prev => prev.map(t => t.id === id ? { ...t, name, date } : t))
   }
 

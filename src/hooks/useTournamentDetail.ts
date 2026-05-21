@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { handleSupabaseError } from '../lib/handleError'
 import type { TournamentCategory, TournamentTask, TournamentNote, BestPractice, TaskStatus, TournamentHelper } from '../types/tournament'
 
 export function useTournamentDetail(tournamentId: string | null) {
@@ -25,6 +26,9 @@ export function useTournamentDetail(tournamentId: string | null) {
       supabase.from('tournament_helpers').select('*, member:club_members(id, name)').eq('tournament_id', tournamentId).order('sort_order'),
       supabase.from('tournament_helper_availability').select('member_id').eq('tournament_id', tournamentId),
     ])
+    handleSupabaseError(cats.error, 'Kategorien laden')
+    handleSupabaseError(tsks.error, 'Aufgaben laden')
+    handleSupabaseError(hlp.error, 'Helfer laden')
     setCategories((cats.data ?? []) as TournamentCategory[])
     setTasks((tsks.data ?? []) as TournamentTask[])
     setNoteState(notes.data as TournamentNote | null)
@@ -39,25 +43,29 @@ export function useTournamentDetail(tournamentId: string | null) {
   // --- Categories ---
   async function addCategory(name: string) {
     const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order), 0)
-    await supabase.from('tournament_categories').insert({ tournament_id: tournamentId, name, sort_order: maxOrder + 10 })
+    const { error } = await supabase.from('tournament_categories').insert({ tournament_id: tournamentId, name, sort_order: maxOrder + 10 })
+    if (error) { handleSupabaseError(error, 'Kategorie hinzufügen'); return }
     await load()
   }
 
   async function renameCategory(id: string, name: string) {
-    await supabase.from('tournament_categories').update({ name }).eq('id', id)
+    const { error } = await supabase.from('tournament_categories').update({ name }).eq('id', id)
+    if (error) { handleSupabaseError(error, 'Kategorie umbenennen'); return }
     await load()
   }
 
   async function deleteCategory(id: string) {
-    await supabase.from('tournament_categories').delete().eq('id', id)
+    const { error } = await supabase.from('tournament_categories').delete().eq('id', id)
+    if (error) { handleSupabaseError(error, 'Kategorie löschen'); return }
     await load()
   }
 
   async function addChecklistCategory(name: string) {
     const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order), 0)
-    await supabase.from('tournament_categories').insert({
+    const { error } = await supabase.from('tournament_categories').insert({
       tournament_id: tournamentId, name, sort_order: maxOrder + 10, is_checklist: true,
     })
+    if (error) { handleSupabaseError(error, 'Checkliste hinzufügen'); return }
     await load()
   }
 
@@ -76,29 +84,32 @@ export function useTournamentDetail(tournamentId: string | null) {
     userId?: string,
     extra?: Partial<Pick<TournamentTask, 'status' | 'responsible_user_id' | 'due_date' | 'notes'>>
   ) {
-    await supabase.from('tasks').insert({
+    const { error } = await supabase.from('tasks').insert({
       category_id: categoryId,
       title,
       created_by: userId ?? null,
       ...extra,
     })
+    if (error) { handleSupabaseError(error, 'Aufgabe hinzufügen'); return }
     await load()
   }
 
   async function updateTask(id: string, changes: Partial<Pick<TournamentTask, 'title' | 'status' | 'responsible_user_id' | 'due_date' | 'notes'>>) {
-    await supabase.from('tasks').update(changes).eq('id', id)
+    const { error } = await supabase.from('tasks').update(changes).eq('id', id)
+    if (error) { handleSupabaseError(error, 'Aufgabe speichern'); return }
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...changes } : t))
   }
 
   async function deleteTask(id: string) {
-    await supabase.from('tasks').delete().eq('id', id)
+    const { error } = await supabase.from('tasks').delete().eq('id', id)
+    if (error) { handleSupabaseError(error, 'Aufgabe löschen'); return }
     setTasks(prev => prev.filter(t => t.id !== id))
   }
 
   // --- Helpers ---
   async function addHelper(role: string, member_id?: string, time_start?: string, time_end?: string) {
     const maxOrder = helpers.reduce((m, h) => Math.max(m, h.sort_order), 0)
-    await supabase.from('tournament_helpers').insert({
+    const { error } = await supabase.from('tournament_helpers').insert({
       tournament_id: tournamentId,
       role,
       member_id: member_id || null,
@@ -106,16 +117,19 @@ export function useTournamentDetail(tournamentId: string | null) {
       time_end: time_end || null,
       sort_order: maxOrder + 10,
     })
+    if (error) { handleSupabaseError(error, 'Helfer hinzufügen'); return }
     await load()
   }
 
   async function updateHelper(id: string, changes: Partial<Pick<TournamentHelper, 'role' | 'member_id' | 'time_start' | 'time_end'>>) {
-    await supabase.from('tournament_helpers').update(changes).eq('id', id)
+    const { error } = await supabase.from('tournament_helpers').update(changes).eq('id', id)
+    if (error) { handleSupabaseError(error, 'Helfer speichern'); return }
     await load()
   }
 
   async function deleteHelper(id: string) {
-    await supabase.from('tournament_helpers').delete().eq('id', id)
+    const { error } = await supabase.from('tournament_helpers').delete().eq('id', id)
+    if (error) { handleSupabaseError(error, 'Helfer löschen'); return }
     setHelpers(prev => prev.filter(h => h.id !== id))
   }
 
@@ -130,43 +144,48 @@ export function useTournamentDetail(tournamentId: string | null) {
   // --- Notes ---
   async function saveNote(content: string) {
     if (note) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('tournament_notes')
         .update({ content, updated_at: new Date().toISOString() })
         .eq('id', note.id)
         .select()
         .single()
+      if (error) { handleSupabaseError(error, 'Notiz speichern'); return }
       setNoteState(data as TournamentNote)
     } else {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('tournament_notes')
         .insert({ tournament_id: tournamentId, content })
         .select()
         .single()
+      if (error) { handleSupabaseError(error, 'Notiz speichern'); return }
       setNoteState(data as TournamentNote)
     }
   }
 
   async function saveBestPractice(content: string) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('best_practices')
       .insert({ tournament_id: tournamentId, content })
       .select()
       .single()
+    if (error) { handleSupabaseError(error, 'Best Practice speichern'); return }
     if (data) setBestPractices(prev => [data as BestPractice, ...prev])
   }
 
   async function toggleAvailability(memberId: string) {
     if (!tournamentId) return
     if (availability.includes(memberId)) {
-      await supabase.from('tournament_helper_availability')
+      const { error } = await supabase.from('tournament_helper_availability')
         .delete()
         .eq('tournament_id', tournamentId)
         .eq('member_id', memberId)
+      if (error) { handleSupabaseError(error, 'Verfügbarkeit'); return }
       setAvailability(prev => prev.filter(id => id !== memberId))
     } else {
-      await supabase.from('tournament_helper_availability')
+      const { error } = await supabase.from('tournament_helper_availability')
         .insert({ tournament_id: tournamentId, member_id: memberId })
+      if (error) { handleSupabaseError(error, 'Verfügbarkeit'); return }
       setAvailability(prev => [...prev, memberId])
     }
   }

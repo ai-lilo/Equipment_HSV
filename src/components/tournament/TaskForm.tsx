@@ -164,7 +164,6 @@ export default function TaskForm({ task, categoryId: _categoryId, users, current
 
           {!isNew && task && (
             <div>
-              <label className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-2">Inventar</label>
               <EquipmentLinker taskId={task.id} readOnly={!canEditAll} />
             </div>
           )}

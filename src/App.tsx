@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Toaster } from 'sonner'
 import { useAuth } from './hooks/useAuth'
 import Header from './components/layout/Header'
 import Login from './pages/Login'
@@ -36,6 +37,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-cream-50 transition-colors">
+      <Toaster position="top-center" richColors closeButton />
       <Header
         user={user}
         page={page}

@@ -82,7 +82,7 @@ export default function Login({ otpEmail, onSendOTP, onVerifyOTP, onResetOTP, er
                 Code gesendet an <strong>{otpEmail}</strong>. Bitte E-Mails prüfen.
               </p>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                6-stelliger Code
+                8-stelliger Code
               </label>
               <input
                 type="text"
@@ -91,7 +91,7 @@ export default function Login({ otpEmail, onSendOTP, onVerifyOTP, onResetOTP, er
                 maxLength={8}
                 value={token}
                 onChange={e => setToken(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456"
+                placeholder="12345678"
                 autoFocus
                 className="w-full text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg px-3 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-navy-700"
               />

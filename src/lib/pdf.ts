@@ -132,16 +132,6 @@ function renderTable(
       doc.text(catName, x + colName + colAnzahl + 2, y + 4.8)
     }
 
-    // Defect note
-    if (item.defect_note) {
-      y += rowH
-      doc.setFontSize(7.5)
-      doc.setTextColor(185, 28, 28)
-      doc.setFont('helvetica', 'italic')
-      const note = doc.splitTextToSize(`  ↳ ${item.defect_note}`, width - 4)[0] as string
-      doc.text(note, x + 2, y + 4.5)
-    }
-
     // Row separator
     doc.setDrawColor(220, 220, 220)
     doc.setLineWidth(0.2)
