@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ChevronDown, ChevronRight, Home, ArchiveX, Package } from 'lucide-react'
 import EquipmentCard from './EquipmentCard'
 import type { Room, Cabinet, Equipment, User, Category } from '../../types'
@@ -34,12 +34,12 @@ export default function TreeView({
 }: Props) {
   const canEdit = user.role === 'MEMBER' || user.role === 'ADMIN'
 
-  const filtered = equipment.filter(e => {
+  const filtered = useMemo(() => equipment.filter(e => {
     if (searchQuery && !matches(e, searchQuery, categories)) return false
     if (filterRoom && e.room_id !== filterRoom) return false
     if (filterCategory && e.category_id !== filterCategory) return false
     return true
-  })
+  }), [equipment, searchQuery, filterRoom, filterCategory, categories])
 
   const filteredRooms = filterRoom ? rooms.filter(r => r.id === filterRoom) : rooms
 

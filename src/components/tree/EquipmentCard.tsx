@@ -38,7 +38,7 @@ export default function EquipmentCard({ item, canEdit, categories, openShoppingI
       {/* Foto-Bereich */}
       <div className="relative flex-1 min-h-0">
         {item.photo_url ? (
-          <img src={item.photo_url} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
+          <img src={item.photo_url} alt={item.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <ImageIcon size={32} className="text-cream-200" />

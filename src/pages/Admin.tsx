@@ -652,6 +652,7 @@ function MitgliederTab() {
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [formName, setFormName] = useState('')
+  const [formError, setFormError] = useState('')
   const [saving, setSaving] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
@@ -691,17 +692,26 @@ function MitgliederTab() {
   }
   const hoursTable = Object.values(hoursByMember).sort((a, b) => b.hours - a.hours)
 
-  function openAdd() { setEditId(null); setFormName(''); setShowForm(true) }
-  function openEdit(id: string, name: string) { setEditId(id); setFormName(name); setShowForm(true) }
-  function cancelForm() { setShowForm(false); setEditId(null); setFormName('') }
+  function openAdd() { setEditId(null); setFormName(''); setFormError(''); setShowForm(true) }
+  function openEdit(id: string, name: string) { setEditId(id); setFormName(name); setFormError(''); setShowForm(true) }
+  function cancelForm() { setShowForm(false); setEditId(null); setFormName(''); setFormError('') }
 
   async function handleSave() {
     if (!formName.trim()) return
+    const trimmedName = formName.trim()
+    const isDuplicate = members.some(m =>
+      m.name.toLowerCase() === trimmedName.toLowerCase() && m.id !== editId
+    )
+    if (isDuplicate) {
+      setFormError(`„${trimmedName}" existiert bereits.`)
+      return
+    }
+    setFormError('')
     setSaving(true)
     if (editId) {
-      await updateMember(editId, formName.trim())
+      await updateMember(editId, trimmedName)
     } else {
-      await addMember(formName.trim())
+      await addMember(trimmedName)
     }
     setSaving(false)
     cancelForm()
@@ -809,11 +819,12 @@ function MitgliederTab() {
               <input
                 autoFocus
                 value={formName}
-                onChange={e => setFormName(e.target.value)}
+                onChange={e => { setFormName(e.target.value); setFormError('') }}
                 onKeyDown={e => { if (e.key === 'Enter') handleSave() }}
                 placeholder="Vorname Nachname"
-                className="w-full rounded-xl px-4 py-3 text-gray-900 bg-cream-100 border-0 focus:outline-none focus:ring-2 focus:ring-navy-700 text-sm"
+                className={`w-full rounded-xl px-4 py-3 text-gray-900 bg-cream-100 border-0 focus:outline-none focus:ring-2 text-sm ${formError ? 'ring-2 ring-red-400' : 'focus:ring-navy-700'}`}
               />
+              {formError && <p className="mt-2 text-xs text-red-600 font-medium">{formError}</p>}
             </div>
             <div className="flex gap-3 px-6 pb-6">
               <button onClick={cancelForm} className="flex-1 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50">

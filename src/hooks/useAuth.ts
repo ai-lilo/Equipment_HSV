@@ -10,10 +10,10 @@ export function useAuth() {
   const [otpEmail, setOtpEmail] = useState<string | null>(null)
 
   useEffect(() => {
-    getSessionUser().then(u => {
-      setUser(u)
-      setLoading(false)
-    })
+    getSessionUser()
+      .then(u => setUser(u))
+      .catch(() => {})
+      .finally(() => setLoading(false))
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user?.email) {

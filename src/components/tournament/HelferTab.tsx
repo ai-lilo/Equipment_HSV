@@ -32,6 +32,7 @@ interface Props {
   onDelete: (id: string) => Promise<void>
   onReorder: (orderedIds: string[]) => Promise<void>
   onToggleAvailability: (memberId: string) => Promise<void>
+  onAddMember: (name: string) => Promise<void>
 }
 
 const inputCls = 'w-full rounded-xl px-4 py-3 text-gray-900 bg-cream-100 border-0 focus:outline-none focus:ring-2 focus:ring-navy-700 text-sm'
@@ -65,7 +66,7 @@ function hasConflict(helper: TournamentHelper, all: TournamentHelper[]): boolean
   )
 }
 
-export default function HelferTab({ tournamentName, helpers, members, availability, isAdmin, onAdd, onUpdate, onDelete, onReorder, onToggleAvailability }: Props) {
+export default function HelferTab({ tournamentName, helpers, members, availability, isAdmin, onAdd, onUpdate, onDelete, onReorder, onToggleAvailability, onAddMember }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [poolOpen, setPoolOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -76,6 +77,10 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
   const [saving, setSaving] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [showAddMemberForm, setShowAddMemberForm] = useState(false)
+  const [newMemberName, setNewMemberName] = useState('')
+  const [addMemberError, setAddMemberError] = useState('')
+  const [savingMember, setSavingMember] = useState(false)
 
   function openAdd() {
     setEditId(null)
@@ -323,8 +328,81 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
                   </p>
                 )
               })()}
+              <div className="pt-2 border-t border-gray-100">
+                <button
+                  onClick={() => { setNewMemberName(''); setAddMemberError(''); setShowAddMemberForm(true) }}
+                  className="flex items-center gap-1.5 text-xs text-navy-700 hover:text-navy-800 font-medium"
+                >
+                  <Plus size={13} /> Neues Mitglied anlegen
+                </button>
+              </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Add member dialog */}
+      {showAddMemberForm && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8 px-4">
+          <div className="bg-cream-50 rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4">
+              <h2 className="text-lg font-bold text-navy-900">Neues Mitglied anlegen</h2>
+              <button
+                onClick={() => setShowAddMemberForm(false)}
+                className="p-2 rounded-full bg-cream-100 text-gray-500 hover:bg-cream-200 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-6 pb-4">
+              <label className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-2">Name</label>
+              <input
+                autoFocus
+                value={newMemberName}
+                onChange={e => { setNewMemberName(e.target.value); setAddMemberError('') }}
+                onKeyDown={async e => {
+                  if (e.key === 'Enter') {
+                    const name = newMemberName.trim()
+                    if (!name) return
+                    const isDuplicate = members.some(m => m.name.toLowerCase() === name.toLowerCase())
+                    if (isDuplicate) { setAddMemberError(`„${name}" existiert bereits.`); return }
+                    setSavingMember(true)
+                    await onAddMember(name)
+                    setSavingMember(false)
+                    setShowAddMemberForm(false)
+                  }
+                  if (e.key === 'Escape') setShowAddMemberForm(false)
+                }}
+                placeholder="Vorname Nachname"
+                className={`w-full rounded-xl px-4 py-3 text-gray-900 bg-cream-100 border-0 focus:outline-none focus:ring-2 text-sm ${addMemberError ? 'ring-2 ring-red-400' : 'focus:ring-navy-700'}`}
+              />
+              {addMemberError && <p className="mt-2 text-xs text-red-600 font-medium">{addMemberError}</p>}
+            </div>
+            <div className="flex gap-3 px-6 pb-6">
+              <button
+                onClick={() => setShowAddMemberForm(false)}
+                className="flex-1 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={async () => {
+                  const name = newMemberName.trim()
+                  if (!name) return
+                  const isDuplicate = members.some(m => m.name.toLowerCase() === name.toLowerCase())
+                  if (isDuplicate) { setAddMemberError(`„${name}" existiert bereits.`); return }
+                  setSavingMember(true)
+                  await onAddMember(name)
+                  setSavingMember(false)
+                  setShowAddMemberForm(false)
+                }}
+                disabled={savingMember || !newMemberName.trim()}
+                className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-navy-700 hover:bg-navy-800 disabled:opacity-50 text-white font-semibold transition-colors"
+              >
+                <Check size={16} /> {savingMember ? 'Speichern…' : 'Speichern'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -7,6 +7,7 @@ interface Props {
   taskId: string
   readOnly: boolean
   onNavigateEquipment?: () => void
+  allEquipment?: Equipment[]
 }
 
 interface EquipmentWithLocation extends Equipment {
@@ -20,15 +21,17 @@ interface Link {
   equipment: EquipmentWithLocation
 }
 
-export default function EquipmentLinker({ taskId, readOnly }: Props) {
+export default function EquipmentLinker({ taskId, readOnly, allEquipment: allEquipmentProp }: Props) {
   const [links, setLinks] = useState<Link[]>([])
-  const [allEquipment, setAllEquipment] = useState<Equipment[]>([])
+  const [allEquipmentLocal, setAllEquipmentLocal] = useState<Equipment[]>([])
   const [search, setSearch] = useState('')
   const [showSearch, setShowSearch] = useState(false)
 
+  const allEquipment = allEquipmentProp ?? allEquipmentLocal
+
   useEffect(() => {
     loadLinks()
-    if (!readOnly) loadEquipment()
+    if (!readOnly && !allEquipmentProp) loadEquipment()
   }, [taskId])
 
   async function loadLinks() {
@@ -41,7 +44,7 @@ export default function EquipmentLinker({ taskId, readOnly }: Props) {
 
   async function loadEquipment() {
     const { data } = await supabase.from('equipment').select('*').order('name')
-    setAllEquipment((data ?? []) as Equipment[])
+    setAllEquipmentLocal((data ?? []) as Equipment[])
   }
 
   async function addLink(equipmentId: string) {

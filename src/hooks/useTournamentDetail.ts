@@ -43,30 +43,33 @@ export function useTournamentDetail(tournamentId: string | null) {
   // --- Categories ---
   async function addCategory(name: string) {
     const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order), 0)
-    const { error } = await supabase.from('tournament_categories').insert({ tournament_id: tournamentId, name, sort_order: maxOrder + 10 })
+    const { data, error } = await supabase.from('tournament_categories')
+      .insert({ tournament_id: tournamentId, name, sort_order: maxOrder + 10 })
+      .select().single()
     if (error) { handleSupabaseError(error, 'Kategorie hinzufügen'); return }
-    await load()
+    if (data) setCategories(prev => [...prev, data as TournamentCategory])
   }
 
   async function renameCategory(id: string, name: string) {
     const { error } = await supabase.from('tournament_categories').update({ name }).eq('id', id)
     if (error) { handleSupabaseError(error, 'Kategorie umbenennen'); return }
-    await load()
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, name } : c))
   }
 
   async function deleteCategory(id: string) {
     const { error } = await supabase.from('tournament_categories').delete().eq('id', id)
     if (error) { handleSupabaseError(error, 'Kategorie löschen'); return }
-    await load()
+    setCategories(prev => prev.filter(c => c.id !== id))
+    setTasks(prev => prev.filter(t => t.category_id !== id))
   }
 
   async function addChecklistCategory(name: string) {
     const maxOrder = categories.reduce((m, c) => Math.max(m, c.sort_order), 0)
-    const { error } = await supabase.from('tournament_categories').insert({
-      tournament_id: tournamentId, name, sort_order: maxOrder + 10, is_checklist: true,
-    })
+    const { data, error } = await supabase.from('tournament_categories')
+      .insert({ tournament_id: tournamentId, name, sort_order: maxOrder + 10, is_checklist: true })
+      .select().single()
     if (error) { handleSupabaseError(error, 'Checkliste hinzufügen'); return }
-    await load()
+    if (data) setCategories(prev => [...prev, data as TournamentCategory])
   }
 
   async function reorderCategories(orderedIds: string[]) {
@@ -74,7 +77,10 @@ export function useTournamentDetail(tournamentId: string | null) {
       supabase.from('tournament_categories').update({ sort_order: (i + 1) * 10 }).eq('id', id)
     )
     await Promise.all(updates)
-    await load()
+    setCategories(prev => {
+      const map = Object.fromEntries(prev.map(c => [c.id, c]))
+      return orderedIds.map((id, i) => ({ ...map[id], sort_order: (i + 1) * 10 }))
+    })
   }
 
   // --- Tasks ---
@@ -84,14 +90,14 @@ export function useTournamentDetail(tournamentId: string | null) {
     userId?: string,
     extra?: Partial<Pick<TournamentTask, 'status' | 'responsible_user_id' | 'due_date' | 'notes'>>
   ) {
-    const { error } = await supabase.from('tasks').insert({
+    const { data, error } = await supabase.from('tasks').insert({
       category_id: categoryId,
       title,
       created_by: userId ?? null,
       ...extra,
-    })
+    }).select().single()
     if (error) { handleSupabaseError(error, 'Aufgabe hinzufügen'); return }
-    await load()
+    if (data) setTasks(prev => [...prev, data as TournamentTask])
   }
 
   async function updateTask(id: string, changes: Partial<Pick<TournamentTask, 'title' | 'status' | 'responsible_user_id' | 'due_date' | 'notes'>>) {
@@ -109,22 +115,30 @@ export function useTournamentDetail(tournamentId: string | null) {
   // --- Helpers ---
   async function addHelper(role: string, member_id?: string, time_start?: string, time_end?: string) {
     const maxOrder = helpers.reduce((m, h) => Math.max(m, h.sort_order), 0)
-    const { error } = await supabase.from('tournament_helpers').insert({
-      tournament_id: tournamentId,
-      role,
-      member_id: member_id || null,
-      time_start: time_start || null,
-      time_end: time_end || null,
-      sort_order: maxOrder + 10,
-    })
+    const { data, error } = await supabase.from('tournament_helpers')
+      .insert({
+        tournament_id: tournamentId,
+        role,
+        member_id: member_id || null,
+        time_start: time_start || null,
+        time_end: time_end || null,
+        sort_order: maxOrder + 10,
+      })
+      .select('*, member:club_members(id, name)')
+      .single()
     if (error) { handleSupabaseError(error, 'Helfer hinzufügen'); return }
-    await load()
+    if (data) setHelpers(prev => [...prev, data as TournamentHelper])
   }
 
   async function updateHelper(id: string, changes: Partial<Pick<TournamentHelper, 'role' | 'member_id' | 'time_start' | 'time_end'>>) {
     const { error } = await supabase.from('tournament_helpers').update(changes).eq('id', id)
     if (error) { handleSupabaseError(error, 'Helfer speichern'); return }
-    await load()
+    // Re-fetch single helper to get updated member join
+    const { data } = await supabase.from('tournament_helpers')
+      .select('*, member:club_members(id, name)')
+      .eq('id', id)
+      .single()
+    if (data) setHelpers(prev => prev.map(h => h.id === id ? data as TournamentHelper : h))
   }
 
   async function deleteHelper(id: string) {
@@ -138,7 +152,10 @@ export function useTournamentDetail(tournamentId: string | null) {
       supabase.from('tournament_helpers').update({ sort_order: (i + 1) * 10 }).eq('id', id)
     )
     await Promise.all(updates)
-    await load()
+    setHelpers(prev => {
+      const map = Object.fromEntries(prev.map(h => [h.id, h]))
+      return orderedIds.map((id, i) => ({ ...map[id], sort_order: (i + 1) * 10 }))
+    })
   }
 
   // --- Notes ---

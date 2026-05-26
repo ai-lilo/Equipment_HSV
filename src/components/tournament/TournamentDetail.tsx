@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ArrowLeft, Plus, FileDown, Archive, ArchiveRestore, Trash2, Calendar, Pencil } from 'lucide-react'
-import type { User } from '../../types'
+import type { User, Equipment } from '../../types'
 import type { Tournament, TournamentTemplate, TournamentTask } from '../../types/tournament'
 import { useTournamentDetail, isOverdue } from '../../hooks/useTournamentDetail'
 import { useAllUsers } from '../../hooks/useAllUsers'
@@ -39,7 +39,13 @@ export default function TournamentDetail({
   const isAdmin = currentUser.role === 'ADMIN'
   const { categories, tasks, helpers, availability, note, bestPractices, loading, addCategory, addChecklistCategory, renameCategory, deleteCategory, reorderCategories, addTask, updateTask, deleteTask, addHelper, updateHelper, deleteHelper, reorderHelpers, saveNote, toggleAvailability } = useTournamentDetail(tournament.id)
   const users = useAllUsers()
-  const { members } = useClubMembers()
+  const { members, addMember } = useClubMembers()
+  const [allEquipment, setAllEquipment] = useState<Equipment[]>([])
+
+  useEffect(() => {
+    supabase.from('equipment').select('*').order('name')
+      .then(({ data }) => setAllEquipment((data ?? []) as Equipment[]))
+  }, [])
 
   const taskCategories = categories.filter(c => !c.is_checklist)
   const taskCategoryIds = new Set(taskCategories.map(c => c.id))
@@ -298,6 +304,7 @@ export default function TournamentDetail({
             categories={categories}
             tasks={tasks}
             isAdmin={isAdmin}
+            allEquipment={allEquipment}
             onUpdateTask={updateTask}
             onAddTask={(catId, title) => addTask(catId, title, currentUser.id)}
             onDeleteTask={deleteTask}
@@ -324,6 +331,7 @@ export default function TournamentDetail({
             onDelete={deleteHelper}
             onReorder={reorderHelpers}
             onToggleAvailability={toggleAvailability}
+            onAddMember={addMember}
           />
         )
       )}

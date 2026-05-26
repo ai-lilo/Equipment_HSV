@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { FileDown, Pencil, Trash2, Plus, Check, X } from 'lucide-react'
 import type { TournamentCategory, TournamentTask, TaskStatus } from '../../types/tournament'
+import type { Equipment } from '../../types'
 import { exportChecklistPDF, type TaskEquipmentEntry } from '../../lib/tournamentPdf'
 import EquipmentLinker from './EquipmentLinker'
 import { supabase } from '../../lib/supabase'
@@ -10,6 +11,7 @@ interface Props {
   categories: TournamentCategory[]
   tasks: TournamentTask[]
   isAdmin: boolean
+  allEquipment?: Equipment[]
   onUpdateTask: (taskId: string, changes: Partial<Pick<TournamentTask, 'title' | 'status'>>) => Promise<void>
   onAddTask: (categoryId: string, title: string) => Promise<void>
   onDeleteTask: (id: string) => Promise<void>
@@ -22,6 +24,7 @@ interface CatBlockProps {
   cat: TournamentCategory
   catTasks: TournamentTask[]
   isAdmin: boolean
+  allEquipment?: Equipment[]
   onUpdateTask: Props['onUpdateTask']
   onAddTask: Props['onAddTask']
   onDeleteTask: Props['onDeleteTask']
@@ -31,14 +34,14 @@ interface CatBlockProps {
 }
 
 function ChecklistCategoryBlock({
-  cat, catTasks, isAdmin,
+  cat, catTasks, isAdmin, allEquipment,
   onUpdateTask, onAddTask, onDeleteTask, onRenameCategory, onDeleteCategory,
   onPrint,
 }: CatBlockProps) {
   const [renaming, setRenaming] = useState(false)
   const [newName, setNewName] = useState(cat.name)
   const [confirmDeleteCat, setConfirmDeleteCat] = useState(false)
-  const [showAddInput, setShowAddInput] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
   const [addingTitle, setAddingTitle] = useState('')
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
@@ -57,7 +60,7 @@ function ChecklistCategoryBlock({
     if (!addingTitle.trim()) return
     await onAddTask(cat.id, addingTitle.trim())
     setAddingTitle('')
-    setShowAddInput(false)
+    setShowAddModal(false)
   }
 
   async function handleRenameTask(task: TournamentTask) {
@@ -68,160 +71,189 @@ function ChecklistCategoryBlock({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-      {/* Category header */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-cream-100 border-b border-cream-200">
-        {renaming ? (
-          <div className="flex-1 flex gap-1.5">
-            <input
-              autoFocus
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') { onRenameCategory(cat.id, newName.trim()); setRenaming(false) }
-                if (e.key === 'Escape') { setRenaming(false); setNewName(cat.name) }
-              }}
-              className="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-navy-700"
-            />
-            <button onClick={() => { onRenameCategory(cat.id, newName.trim()); setRenaming(false) }} className="text-green-600"><Check size={15} /></button>
-            <button onClick={() => { setRenaming(false); setNewName(cat.name) }} className="text-gray-400"><X size={15} /></button>
-          </div>
-        ) : (
-          <div className="flex-1">
-            <h3 className="text-sm font-bold text-gray-900">{cat.name}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{done}/{total} erledigt</p>
-          </div>
-        )}
-
-        <div className="flex items-center gap-1.5 shrink-0">
-          {isAdmin && !renaming && (
-            <>
-              <button
-                onClick={() => { setShowAddInput(true); setTimeout(() => addInputRef.current?.focus(), 50) }}
-                className="p-1 rounded text-gray-400 hover:text-navy-700 hover:bg-cream-200"
-                title="Aufgabe hinzufügen"
-              ><Plus size={14} /></button>
-              <button
-                onClick={() => setRenaming(true)}
-                className="p-1 rounded text-gray-400 hover:text-navy-700 hover:bg-cream-200"
-                title="Umbenennen"
-              ><Pencil size={13} /></button>
-              {confirmDeleteCat ? (
-                <span className="flex items-center gap-1 text-xs">
-                  <span className="text-red-600 font-medium">Löschen?</span>
-                  <button onClick={() => { onDeleteCategory(cat.id); setConfirmDeleteCat(false) }} className="px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Ja</button>
-                  <button onClick={() => setConfirmDeleteCat(false)} className="px-1.5 py-0.5 rounded border border-gray-300 text-gray-600">Nein</button>
-                </span>
-              ) : (
-                <button
-                  onClick={() => setConfirmDeleteCat(true)}
-                  className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
-                  title="Kategorie löschen"
-                ><Trash2 size={13} /></button>
-              )}
-            </>
+    <>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        {/* Category header */}
+        <div className="flex items-center gap-2 px-4 py-3 bg-cream-100 border-b border-cream-200">
+          {renaming ? (
+            <div className="flex-1 flex gap-1.5">
+              <input
+                autoFocus
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') { onRenameCategory(cat.id, newName.trim()); setRenaming(false) }
+                  if (e.key === 'Escape') { setRenaming(false); setNewName(cat.name) }
+                }}
+                className="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-navy-700"
+              />
+              <button onClick={() => { onRenameCategory(cat.id, newName.trim()); setRenaming(false) }} className="text-green-600"><Check size={15} /></button>
+              <button onClick={() => { setRenaming(false); setNewName(cat.name) }} className="text-gray-400"><X size={15} /></button>
+            </div>
+          ) : (
+            <div className="flex-1">
+              <h3 className="text-sm font-bold text-gray-900">{cat.name}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{done}/{total} erledigt</p>
+            </div>
           )}
-          <button
-            onClick={() => onPrint(cat)}
-            className="flex items-center gap-1 text-xs text-navy-700 hover:text-navy-800 hover:underline"
-          >
-            <FileDown size={13} /> Drucken
-          </button>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isAdmin && !renaming && (
+              <>
+                <button
+                  onClick={() => { setShowAddModal(true); setTimeout(() => addInputRef.current?.focus(), 50) }}
+                  className="p-1 rounded text-gray-400 hover:text-navy-700 hover:bg-cream-200"
+                  title="Aufgabe hinzufügen"
+                ><Plus size={14} /></button>
+                <button
+                  onClick={() => setRenaming(true)}
+                  className="p-1 rounded text-gray-400 hover:text-navy-700 hover:bg-cream-200"
+                  title="Umbenennen"
+                ><Pencil size={13} /></button>
+                {confirmDeleteCat ? (
+                  <span className="flex items-center gap-1 text-xs">
+                    <span className="text-red-600 font-medium">Löschen?</span>
+                    <button onClick={() => { onDeleteCategory(cat.id); setConfirmDeleteCat(false) }} className="px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Ja</button>
+                    <button onClick={() => setConfirmDeleteCat(false)} className="px-1.5 py-0.5 rounded border border-gray-300 text-gray-600">Nein</button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteCat(true)}
+                    className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50"
+                    title="Kategorie löschen"
+                  ><Trash2 size={13} /></button>
+                )}
+              </>
+            )}
+            <button
+              onClick={() => onPrint(cat)}
+              className="flex items-center gap-1 text-xs text-navy-700 hover:text-navy-800 hover:underline"
+            >
+              <FileDown size={13} /> Drucken
+            </button>
+          </div>
+        </div>
+
+        {/* Task list */}
+        <div className="space-y-2 p-3">
+          {catTasks.map(task => {
+            const checked = task.status === 'abgeschlossen'
+            return (
+              <div key={task.id} className="bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => toggleTask(task)}
+                    className={`w-6 h-6 shrink-0 rounded-lg border-2 flex items-center justify-center transition-colors ${
+                      checked
+                        ? 'bg-navy-700 border-navy-700 text-white'
+                        : 'border-cream-200 bg-cream-100'
+                    }`}
+                  >
+                    {checked && <Check size={13} strokeWidth={3} />}
+                  </button>
+
+                  {editingTaskId === task.id ? (
+                    <div className="flex-1 flex gap-1.5">
+                      <input
+                        autoFocus
+                        value={editingTitle}
+                        onChange={e => setEditingTitle(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') handleRenameTask(task)
+                          if (e.key === 'Escape') setEditingTaskId(null)
+                        }}
+                        className="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-navy-700"
+                      />
+                      <button onClick={() => handleRenameTask(task)} className="text-green-600"><Check size={15} /></button>
+                      <button onClick={() => setEditingTaskId(null)} className="text-gray-400"><X size={15} /></button>
+                    </div>
+                  ) : (
+                    <span className={`flex-1 text-sm ${checked ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                      {task.title}
+                    </span>
+                  )}
+
+                  {isAdmin && editingTaskId !== task.id && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => { setEditingTaskId(task.id); setEditingTitle(task.title); setConfirmDeleteTaskId(null) }}
+                        className="p-0.5 rounded text-gray-400 hover:text-navy-700"
+                        title="Aufgabe umbenennen"
+                      ><Pencil size={12} /></button>
+                      {confirmDeleteTaskId === task.id ? (
+                        <span className="flex items-center gap-1 text-xs">
+                          <button onClick={() => { onDeleteTask(task.id); setConfirmDeleteTaskId(null) }} className="px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Ja</button>
+                          <button onClick={() => setConfirmDeleteTaskId(null)} className="px-1.5 py-0.5 rounded border border-gray-300 text-gray-600">Nein</button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteTaskId(task.id)}
+                          className="p-0.5 rounded text-gray-400 hover:text-red-600"
+                          title="Aufgabe löschen"
+                        ><Trash2 size={12} /></button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <EquipmentLinker taskId={task.id} readOnly={!isAdmin} allEquipment={allEquipment} />
+              </div>
+            )
+          })}
         </div>
       </div>
 
-      {/* Task list — individual white cards */}
-      <div className="space-y-2 p-3">
-        {catTasks.map(task => {
-          const checked = task.status === 'abgeschlossen'
-          return (
-            <div key={task.id} className="bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-3">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => toggleTask(task)}
-                  className={`w-6 h-6 shrink-0 rounded-lg border-2 flex items-center justify-center transition-colors ${
-                    checked
-                      ? 'bg-navy-700 border-navy-700 text-white'
-                      : 'border-cream-200 bg-cream-100'
-                  }`}
-                >
-                  {checked && <Check size={13} strokeWidth={3} />}
-                </button>
-
-                {editingTaskId === task.id ? (
-                  <div className="flex-1 flex gap-1.5">
-                    <input
-                      autoFocus
-                      value={editingTitle}
-                      onChange={e => setEditingTitle(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') handleRenameTask(task)
-                        if (e.key === 'Escape') setEditingTaskId(null)
-                      }}
-                      className="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-navy-700"
-                    />
-                    <button onClick={() => handleRenameTask(task)} className="text-green-600"><Check size={15} /></button>
-                    <button onClick={() => setEditingTaskId(null)} className="text-gray-400"><X size={15} /></button>
-                  </div>
-                ) : (
-                  <span className={`flex-1 text-sm ${checked ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-                    {task.title}
-                  </span>
-                )}
-
-                {isAdmin && editingTaskId !== task.id && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => { setEditingTaskId(task.id); setEditingTitle(task.title); setConfirmDeleteTaskId(null) }}
-                      className="p-0.5 rounded text-gray-400 hover:text-navy-700"
-                      title="Aufgabe umbenennen"
-                    ><Pencil size={12} /></button>
-                    {confirmDeleteTaskId === task.id ? (
-                      <span className="flex items-center gap-1 text-xs">
-                        <button onClick={() => { onDeleteTask(task.id); setConfirmDeleteTaskId(null) }} className="px-1.5 py-0.5 rounded bg-red-600 text-white hover:bg-red-700">Ja</button>
-                        <button onClick={() => setConfirmDeleteTaskId(null)} className="px-1.5 py-0.5 rounded border border-gray-300 text-gray-600">Nein</button>
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmDeleteTaskId(task.id)}
-                        className="p-0.5 rounded text-gray-400 hover:text-red-600"
-                        title="Aufgabe löschen"
-                      ><Trash2 size={12} /></button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <EquipmentLinker taskId={task.id} readOnly={!isAdmin} />
+      {/* Add task modal */}
+      {isAdmin && showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8 px-4">
+          <div className="bg-cream-50 rounded-2xl shadow-xl w-full max-w-sm">
+            <div className="flex items-center justify-between px-6 pt-5 pb-4">
+              <h2 className="text-lg font-bold text-navy-900">Neuer Eintrag</h2>
+              <button
+                onClick={() => { setShowAddModal(false); setAddingTitle('') }}
+                className="p-2 rounded-full bg-cream-100 text-gray-500 hover:bg-cream-200 transition-colors"
+              >
+                <X size={18} />
+              </button>
             </div>
-          )
-        })}
-
-        {isAdmin && showAddInput && (
-          <div className="flex gap-1.5">
-            <input
-              ref={addInputRef}
-              value={addingTitle}
-              onChange={e => setAddingTitle(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleAddTask()
-                if (e.key === 'Escape') { setShowAddInput(false); setAddingTitle('') }
-              }}
-              placeholder="Neue Aufgabe..."
-              className="flex-1 text-sm border border-gray-300 rounded-xl px-2.5 py-1.5 outline-none focus:ring-2 focus:ring-navy-700"
-            />
-            <button onClick={handleAddTask} className="px-3 py-1.5 rounded-xl bg-navy-700 text-white text-sm hover:bg-navy-800">OK</button>
-            <button onClick={() => { setShowAddInput(false); setAddingTitle('') }} className="px-2 py-1.5 rounded-xl border border-gray-300 text-sm text-gray-600">
-              <X size={15} />
-            </button>
+            <div className="px-6 pb-4">
+              <label className="block text-xs font-semibold tracking-widest uppercase text-gray-400 mb-2">Bezeichnung</label>
+              <input
+                ref={addInputRef}
+                autoFocus
+                value={addingTitle}
+                onChange={e => setAddingTitle(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleAddTask()
+                  if (e.key === 'Escape') { setShowAddModal(false); setAddingTitle('') }
+                }}
+                placeholder="z.B. Hütchen, Startnummern, Mikrofon…"
+                className="w-full rounded-xl px-4 py-3 text-gray-900 bg-cream-100 border-0 focus:outline-none focus:ring-2 focus:ring-navy-700 text-sm"
+              />
+            </div>
+            <div className="flex gap-3 px-6 pb-6">
+              <button
+                onClick={() => { setShowAddModal(false); setAddingTitle('') }}
+                className="flex-1 py-3 rounded-xl border border-gray-300 bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleAddTask}
+                disabled={!addingTitle.trim()}
+                className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-navy-700 hover:bg-navy-800 disabled:opacity-50 text-white font-semibold transition-colors"
+              >
+                <Check size={16} /> Hinzufügen
+              </button>
+            </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   )
 }
 
-export default function ChecklistTab({ tournamentName, categories, tasks, isAdmin, onUpdateTask, onAddTask, onDeleteTask, onRenameCategory, onDeleteCategory, onAddChecklistCategory }: Props) {
+export default function ChecklistTab({ tournamentName, categories, tasks, isAdmin, allEquipment, onUpdateTask, onAddTask, onDeleteTask, onRenameCategory, onDeleteCategory, onAddChecklistCategory }: Props) {
   const [showNewCatInput, setShowNewCatInput] = useState(false)
   const [newCatName, setNewCatName] = useState('')
 
@@ -317,6 +349,7 @@ export default function ChecklistTab({ tournamentName, categories, tasks, isAdmi
           cat={cat}
           catTasks={tasks.filter(t => t.category_id === cat.id)}
           isAdmin={isAdmin}
+          allEquipment={allEquipment}
           onUpdateTask={onUpdateTask}
           onAddTask={onAddTask}
           onDeleteTask={onDeleteTask}

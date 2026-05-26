@@ -51,45 +51,62 @@ export function useTournaments() {
     const template = templates.find(t => t.id === templateId)
     if (!template?.source_tournament_id) return
 
-    const [cats, tasks, hlp] = await Promise.all([
-      supabase
-        .from('tournament_categories')
-        .select('*')
-        .eq('tournament_id', template.source_tournament_id)
-        .order('sort_order'),
-      supabase
-        .from('tasks')
-        .select('*'),
-      supabase
-        .from('tournament_helpers')
-        .select('*')
-        .eq('tournament_id', template.source_tournament_id)
-        .order('sort_order'),
+    const srcTournamentId = template.source_tournament_id
+
+    const [cats, hlp] = await Promise.all([
+      supabase.from('tournament_categories').select('*').eq('tournament_id', srcTournamentId).order('sort_order'),
+      supabase.from('tournament_helpers').select('*').eq('tournament_id', srcTournamentId).order('sort_order'),
     ])
 
     const srcCategories = (cats.data ?? []) as TournamentCategory[]
-    const allTasks = (tasks.data ?? []) as TournamentTask[]
     const srcHelpers = (hlp.data ?? []) as TournamentHelper[]
+
+    if (srcCategories.length === 0) return
+
+    // Filter tasks server-side instead of loading entire DB
+    const { data: tasksData } = await supabase.from('tasks').select('*')
+      .in('category_id', srcCategories.map(c => c.id))
+    const srcTasks = (tasksData ?? []) as TournamentTask[]
+
+    // Map old task IDs → new task IDs for equipment link copying
+    const taskIdMap = new Map<string, string>()
 
     for (const cat of srcCategories) {
       const { data: newCat } = await supabase
         .from('tournament_categories')
-        .insert({ tournament_id: newTournamentId, name: cat.name, sort_order: cat.sort_order })
+        .insert({ tournament_id: newTournamentId, name: cat.name, sort_order: cat.sort_order, is_checklist: cat.is_checklist })
         .select()
         .single()
 
       if (!newCat) continue
 
-      const catTasks = allTasks.filter(t => t.category_id === cat.id)
+      const catTasks = srcTasks.filter(t => t.category_id === cat.id)
       if (catTasks.length === 0) continue
 
-      await supabase.from('tasks').insert(
-        catTasks.map(t => ({
-          category_id: newCat.id,
-          title: t.title,
-          status: 'nicht_begonnen',
-        }))
-      )
+      // Generate IDs client-side for reliable old→new mapping
+      const inserts = catTasks.map(t => ({
+        id: crypto.randomUUID(),
+        category_id: (newCat as TournamentCategory).id,
+        title: t.title,
+        status: 'nicht_begonnen' as const,
+      }))
+      await supabase.from('tasks').insert(inserts)
+      catTasks.forEach((oldTask, i) => taskIdMap.set(oldTask.id, inserts[i].id))
+    }
+
+    // Copy task_equipment links to new tasks
+    if (taskIdMap.size > 0) {
+      const { data: links } = await supabase.from('task_equipment')
+        .select('task_id, equipment_id')
+        .in('task_id', [...taskIdMap.keys()])
+      if (links && links.length > 0) {
+        await supabase.from('task_equipment').insert(
+          (links as { task_id: string; equipment_id: string }[]).map(l => ({
+            task_id: taskIdMap.get(l.task_id)!,
+            equipment_id: l.equipment_id,
+          }))
+        )
+      }
     }
 
     if (srcHelpers.length > 0) {
@@ -107,23 +124,19 @@ export function useTournaments() {
   }
 
   async function buildTemplateFromTournament(sourceTournamentId: string): Promise<string | null> {
-    const [cats, allTasksRes, hlp] = await Promise.all([
-      supabase
-        .from('tournament_categories')
-        .select('*')
-        .eq('tournament_id', sourceTournamentId)
-        .order('sort_order'),
-      supabase.from('tasks').select('*'),
-      supabase
-        .from('tournament_helpers')
-        .select('*')
-        .eq('tournament_id', sourceTournamentId)
-        .order('sort_order'),
+    const [cats, hlp] = await Promise.all([
+      supabase.from('tournament_categories').select('*').eq('tournament_id', sourceTournamentId).order('sort_order'),
+      supabase.from('tournament_helpers').select('*').eq('tournament_id', sourceTournamentId).order('sort_order'),
     ])
 
     const srcCats = (cats.data ?? []) as TournamentCategory[]
-    const allTasks = (allTasksRes.data ?? []) as TournamentTask[]
     const srcHelpers = (hlp.data ?? []) as TournamentHelper[]
+
+    // Filter tasks server-side instead of loading entire DB
+    const { data: tasksData } = srcCats.length > 0
+      ? await supabase.from('tasks').select('*').in('category_id', srcCats.map(c => c.id))
+      : { data: [] }
+    const allTasks = (tasksData ?? []) as TournamentTask[]
 
     const { data: tmplTournament } = await supabase
       .from('tournaments')
@@ -137,7 +150,7 @@ export function useTournaments() {
     for (const cat of srcCats) {
       const { data: newCat } = await supabase
         .from('tournament_categories')
-        .insert({ tournament_id: tmplId, name: cat.name, sort_order: cat.sort_order })
+        .insert({ tournament_id: tmplId, name: cat.name, sort_order: cat.sort_order, is_checklist: cat.is_checklist })
         .select()
         .single()
       if (!newCat) continue
