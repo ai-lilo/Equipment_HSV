@@ -1,0 +1,17 @@
+{
+  "name": "Equipment HSV Pegnitz",
+  "short_name": "Equipment HSV",
+  "description": "Inventar- und Veranstaltungsverwaltung HSV Pegnitz",
+  "start_url": "/Equipment_HSV/",
+  "display": "standalone",
+  "background_color": "#f5f0e8",
+  "theme_color": "#1e3464",
+  "icons": [
+    {
+      "src": "/Equipment_HSV/logo.png",
+      "sizes": "182x182",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
