@@ -27,7 +27,7 @@ interface Props {
   members: ClubMember[]
   availability: string[]
   isAdmin: boolean
-  onAdd: (role: string, member_id?: string, time_start?: string, time_end?: string) => Promise<void>
+  onAdd: (role: string, member_ids: string[], time_start?: string, time_end?: string) => Promise<void>
   onUpdate: (id: string, changes: Partial<Pick<TournamentHelper, 'role' | 'member_id' | 'time_start' | 'time_end'>>) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onReorder: (orderedIds: string[]) => Promise<void>
@@ -71,7 +71,7 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
   const [poolOpen, setPoolOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [formRole, setFormRole] = useState('')
-  const [formMemberId, setFormMemberId] = useState('')
+  const [formMemberIds, setFormMemberIds] = useState<string[]>([])
   const [formTimeStart, setFormTimeStart] = useState('')
   const [formTimeEnd, setFormTimeEnd] = useState('')
   const [saving, setSaving] = useState(false)
@@ -85,7 +85,7 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
   function openAdd() {
     setEditId(null)
     setFormRole('')
-    setFormMemberId('')
+    setFormMemberIds([])
     setFormTimeStart('')
     setFormTimeEnd('')
     setShowForm(true)
@@ -94,7 +94,7 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
   function openEdit(helper: TournamentHelper) {
     setEditId(helper.id)
     setFormRole(helper.role ?? '')
-    setFormMemberId(helper.member_id ?? '')
+    setFormMemberIds(helper.member_id ? [helper.member_id] : [])
     setFormTimeStart(helper.time_start ?? '')
     setFormTimeEnd(helper.time_end ?? '')
     setShowForm(true)
@@ -104,7 +104,7 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
     setShowForm(false)
     setEditId(null)
     setFormRole('')
-    setFormMemberId('')
+    setFormMemberIds([])
     setFormTimeStart('')
     setFormTimeEnd('')
     setSaving(false)
@@ -117,12 +117,12 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
       if (editId) {
         await onUpdate(editId, {
           role: formRole.trim(),
-          member_id: formMemberId || null,
+          member_id: formMemberIds[0] || null,
           time_start: formTimeStart || null,
           time_end: formTimeEnd || null,
         })
       } else {
-        await onAdd(formRole.trim(), formMemberId || undefined, formTimeStart || undefined, formTimeEnd || undefined)
+        await onAdd(formRole.trim(), formMemberIds, formTimeStart || undefined, formTimeEnd || undefined)
       }
       cancelForm()
     } finally {
@@ -181,6 +181,12 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
+  function getMemberSlots(memberId: string): string[] {
+    return helpers
+      .filter(h => h.member_id === memberId && (h.time_start || h.time_end))
+      .map(h => `${h.time_start ?? '?'}–${h.time_end ?? '?'}`)
+  }
+
   return (
     <div className="space-y-4">
       {/* Action bar */}
@@ -206,7 +212,7 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
             onClick={openAdd}
             className="ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl bg-navy-700 text-white text-sm hover:bg-navy-800"
           >
-            <Plus size={15} /> Helfer hinzufügen
+            <Plus size={15} /> Aufgabe hinzufügen
           </button>
         )}
       </div>
@@ -215,7 +221,7 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
       {helpers.length === 0 && (
         <div className="text-center py-12 text-gray-400">
           <p className="text-sm">Noch keine Helfer eingetragen.</p>
-          {isAdmin && <p className="text-xs mt-1 opacity-70">Klicke auf „Helfer hinzufügen" um Aufgaben anzulegen.</p>}
+          {isAdmin && <p className="text-xs mt-1 opacity-70">Klicke auf „Aufgabe hinzufügen" um Aufgaben anzulegen.</p>}
         </div>
       )}
 
@@ -300,21 +306,27 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
             <div className="border-t border-gray-100 px-4 py-3 space-y-2">
               {members.map(m => {
                 const isAvail = availability.includes(m.id)
-                const isAssigned = helpers.some(h => h.member_id === m.id)
+                const slots = getMemberSlots(m.id)
+                const isAssigned = slots.length > 0 || helpers.some(h => h.member_id === m.id)
                 return (
-                  <label key={m.id} className="flex items-center gap-3 cursor-pointer">
+                  <label key={m.id} className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={isAvail}
                       onChange={() => onToggleAvailability(m.id)}
-                      className="w-4 h-4 rounded accent-navy-700"
+                      className="w-4 h-4 rounded accent-navy-700 mt-0.5"
                     />
-                    <span className="flex-1 text-sm text-gray-800">{m.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-gray-800">{m.name}</span>
+                      {isAvail && slots.length > 0 && (
+                        <p className="text-xs text-gray-400 mt-0.5">{slots.join(', ')}</p>
+                      )}
+                    </div>
                     {isAvail && !isAssigned && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">noch nicht eingeplant</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium shrink-0">noch nicht eingeplant</span>
                     )}
                     {isAvail && isAssigned && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">eingeplant</span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium shrink-0">eingeplant</span>
                     )}
                   </label>
                 )
@@ -412,7 +424,7 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
           <div className="bg-cream-50 rounded-2xl shadow-xl w-full max-w-md">
             <div className="flex items-center justify-between px-6 pt-5 pb-4">
               <h2 className="text-lg font-bold text-navy-900">
-                {editId ? 'Helfer bearbeiten' : 'Helfer hinzufügen'}
+                {editId ? 'Aufgabe bearbeiten' : 'Aufgabe hinzufügen'}
               </h2>
               <button onClick={cancelForm} className="p-2 rounded-full bg-cream-100 text-gray-500 hover:bg-cream-200 transition-colors">
                 <X size={18} />
@@ -429,19 +441,41 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
                   className={inputCls}
                 />
               </Field>
-              <Field label="Person">
-                <select
-                  value={formMemberId}
-                  onChange={e => setFormMemberId(e.target.value)}
-                  className={inputCls}
-                >
-                  <option value="">Noch nicht zugewiesen</option>
-                  {members
-                    .filter(m => availability.includes(m.id) || (editId !== null && formMemberId === m.id))
-                    .map(m => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))}
-                </select>
+              <Field label={editId ? 'Person' : 'Personen'}>
+                {editId ? (
+                  <select
+                    value={formMemberIds[0] ?? ''}
+                    onChange={e => setFormMemberIds(e.target.value ? [e.target.value] : [])}
+                    className={inputCls}
+                  >
+                    <option value="">Noch nicht zugewiesen</option>
+                    {members
+                      .filter(m => availability.includes(m.id) || formMemberIds.includes(m.id))
+                      .map(m => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                  </select>
+                ) : (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto rounded-xl bg-cream-100 px-4 py-3">
+                    {members.filter(m => availability.includes(m.id)).length === 0 ? (
+                      <p className="text-xs text-gray-400">Keine verfügbaren Personen — erst im Pool aktivieren.</p>
+                    ) : (
+                      members.filter(m => availability.includes(m.id)).map(m => (
+                        <label key={m.id} className="flex items-center gap-2.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formMemberIds.includes(m.id)}
+                            onChange={e => setFormMemberIds(prev =>
+                              e.target.checked ? [...prev, m.id] : prev.filter(id => id !== m.id)
+                            )}
+                            className="w-4 h-4 rounded accent-navy-700"
+                          />
+                          <span className="text-sm text-gray-800">{m.name}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                )}
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Von">

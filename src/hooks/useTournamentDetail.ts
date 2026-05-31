@@ -130,6 +130,25 @@ export function useTournamentDetail(tournamentId: string | null) {
     if (data) setHelpers(prev => [...prev, data as TournamentHelper])
   }
 
+  async function addHelpers(role: string, member_ids: string[], time_start?: string, time_end?: string) {
+    if (member_ids.length === 0) {
+      await addHelper(role, undefined, time_start, time_end)
+      return
+    }
+    const maxOrder = helpers.reduce((m, h) => Math.max(m, h.sort_order), 0)
+    const rows = member_ids.map((mid, i) => ({
+      tournament_id: tournamentId,
+      member_id: mid,
+      role: role || null,
+      time_start: time_start || null,
+      time_end: time_end || null,
+      sort_order: maxOrder + (i + 1) * 10,
+    }))
+    const { error } = await supabase.from('tournament_helpers').insert(rows)
+    if (error) { handleSupabaseError(error, 'Helfer hinzufügen'); return }
+    await load()
+  }
+
   async function updateHelper(id: string, changes: Partial<Pick<TournamentHelper, 'role' | 'member_id' | 'time_start' | 'time_end'>>) {
     const { error } = await supabase.from('tournament_helpers').update(changes).eq('id', id)
     if (error) { handleSupabaseError(error, 'Helfer speichern'); return }
@@ -225,6 +244,7 @@ export function useTournamentDetail(tournamentId: string | null) {
     updateTask,
     deleteTask,
     addHelper,
+    addHelpers,
     updateHelper,
     deleteHelper,
     reorderHelpers,

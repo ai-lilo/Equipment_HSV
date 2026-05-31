@@ -27,6 +27,34 @@ export default function App() {
     }
   }, [])
 
+  useEffect(() => {
+    let hiddenAt: number | null = null
+
+    function onVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now()
+      } else if (document.visibilityState === 'visible' && hiddenAt !== null) {
+        if (Date.now() - hiddenAt > 30_000) {
+          window.location.reload()
+        }
+        hiddenAt = null
+      }
+    }
+
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) {
+        window.location.reload()
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('pageshow', onPageShow)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('pageshow', onPageShow)
+    }
+  }, [])
+
   if (loading && !user) {
     return <div className="min-h-screen bg-navy-700" />
   }
