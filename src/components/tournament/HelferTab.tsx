@@ -455,10 +455,10 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
                   </select>
                 ) : (
                   <div className="space-y-1.5 max-h-48 overflow-y-auto rounded-xl bg-cream-100 px-4 py-3">
-                    {members.length === 0 ? (
-                      <p className="text-xs text-gray-400">Keine Mitglieder vorhanden.</p>
+                    {members.filter(m => availability.includes(m.id)).length === 0 ? (
+                      <p className="text-xs text-gray-400">Keine verfügbaren Personen — erst im Pool aktivieren.</p>
                     ) : (
-                      members.map(m => (
+                      members.filter(m => availability.includes(m.id)).map(m => (
                         <label key={m.id} className="flex items-center gap-2.5 cursor-pointer">
                           <input
                             type="checkbox"
@@ -469,9 +469,6 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
                             className="w-4 h-4 rounded accent-navy-700"
                           />
                           <span className="text-sm text-gray-800">{m.name}</span>
-                          {availability.includes(m.id) && (
-                            <span className="ml-auto text-xs text-emerald-600 font-medium shrink-0">verfügbar</span>
-                          )}
                         </label>
                       ))
                     )}
