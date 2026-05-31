@@ -28,19 +28,34 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    let hiddenAt: number | null = null
+    const THRESHOLD = 15_000
 
+    // Heartbeat: detect process suspension (most reliable on iOS)
+    let lastTick = Date.now()
+    const heartbeat = setInterval(() => {
+      const now = Date.now()
+      if (now - lastTick > THRESHOLD) {
+        window.location.reload()
+        return
+      }
+      lastTick = now
+    }, 2000)
+
+    // visibilitychange: screen lock / app switch
+    let hiddenAt: number | null = null
     function onVisibilityChange() {
       if (document.visibilityState === 'hidden') {
         hiddenAt = Date.now()
       } else if (document.visibilityState === 'visible' && hiddenAt !== null) {
-        if (Date.now() - hiddenAt > 30_000) {
+        if (Date.now() - hiddenAt > THRESHOLD) {
           window.location.reload()
+          return
         }
         hiddenAt = null
       }
     }
 
+    // pageshow with persisted=true: BFCache restore on iOS
     function onPageShow(e: PageTransitionEvent) {
       if (e.persisted) {
         window.location.reload()
@@ -50,6 +65,7 @@ export default function App() {
     document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener('pageshow', onPageShow)
     return () => {
+      clearInterval(heartbeat)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       window.removeEventListener('pageshow', onPageShow)
     }
