@@ -28,7 +28,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const THRESHOLD = 15_000
+    const THRESHOLD = 5_000
 
     // Heartbeat: detect process suspension (most reliable on iOS)
     let lastTick = Date.now()
