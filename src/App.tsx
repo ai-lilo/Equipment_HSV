@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import Admin from './pages/Admin'
 import ShoppingList from './pages/ShoppingList'
 import Tournament from './pages/Tournament'
+import Instructions from './pages/Instructions'
 
 function getUrlFilter() {
   const params = new URLSearchParams(window.location.search)
@@ -100,6 +101,9 @@ export default function App() {
         )}
         {page === 'turnier' && (
           <Tournament user={user} onNavigate={setPage} />
+        )}
+        {page === 'instructions' && (
+          <Instructions user={user} />
         )}
       </main>
     </div>

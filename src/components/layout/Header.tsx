@@ -1,4 +1,4 @@
-import { LogOut, ShieldCheck, ShoppingCart, Trophy } from 'lucide-react'
+import { LogOut, ShieldCheck, ShoppingCart, Trophy, BookOpen } from 'lucide-react'
 import type { User } from '../../types'
 
 interface Props {
@@ -42,6 +42,10 @@ export default function Header({ user, page, onNavigate, onLogout }: Props) {
           <NavBtn active={page === 'turnier'} onClick={() => onNavigate('turnier')}>
             <Trophy size={14} className="sm:hidden" />
             <span className="hidden sm:inline">Veranstaltung</span>
+          </NavBtn>
+          <NavBtn active={page === 'instructions'} onClick={() => onNavigate('instructions')}>
+            <BookOpen size={14} className="sm:hidden" />
+            <span className="hidden sm:inline">Anleitungen</span>
           </NavBtn>
           {user.role === 'ADMIN' && (
             <NavBtn active={page === 'admin'} onClick={() => onNavigate('admin')}>

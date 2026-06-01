@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Image as ImageIcon, ShoppingCart } from 'lucide-react'
+import { Image as ImageIcon, ShoppingCart, BookOpen } from 'lucide-react'
 import StatusBadge from '../ui/StatusBadge'
 import type { Equipment, Category } from '../../types'
 
@@ -8,11 +8,12 @@ interface Props {
   canEdit: boolean
   categories: Category[]
   openShoppingIds: Set<string>
+  instructionCount: number
   onEdit: (item: Equipment) => void
   onAddToShoppingList?: (item: Equipment) => Promise<'added' | 'duplicate'>
 }
 
-export default function EquipmentCard({ item, canEdit, categories, openShoppingIds, onEdit, onAddToShoppingList }: Props) {
+export default function EquipmentCard({ item, canEdit, categories, openShoppingIds, instructionCount, onEdit, onAddToShoppingList }: Props) {
   const [feedback, setFeedback] = useState<'added' | 'duplicate' | null>(null)
   const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -44,7 +45,12 @@ export default function EquipmentCard({ item, canEdit, categories, openShoppingI
             <ImageIcon size={32} className="text-cream-200" />
           </div>
         )}
-
+        {instructionCount > 0 && (
+          <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-navy-700/80 text-white text-xs rounded-full px-1.5 py-0.5">
+            <BookOpen size={9} />
+            <span className="font-semibold">{instructionCount}</span>
+          </div>
+        )}
       </div>
 
       {/* Beige Info-Balken */}

@@ -59,6 +59,30 @@ export interface Equipment {
   updated_at: string
 }
 
+export type InstructionMediaType = 'image' | 'video'
+
+export interface InstructionStep {
+  id: string
+  instruction_id: string
+  order_index: number
+  description: string
+  media_url: string | null
+  media_type: InstructionMediaType | null
+  created_at: string
+}
+
+export interface Instruction {
+  id: string
+  equipment_id: string | null
+  title: string
+  description: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+  equipment?: { name: string }
+  steps?: InstructionStep[]
+}
+
 export interface ChangeLog {
   id: string
   equipment_id: string

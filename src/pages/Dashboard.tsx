@@ -23,6 +23,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
   const [filterCategory, setFilterCategory] = useState('')
   const [editItem, setEditItem] = useState<Equipment | null | 'new'>(null)
   const [openShoppingIds, setOpenShoppingIds] = useState<Set<string>>(new Set())
+  const [instructionCounts, setInstructionCounts] = useState<Map<string, number>>(new Map())
 
   const canEdit = user.role === 'MEMBER' || user.role === 'ADMIN'
 
@@ -35,6 +36,16 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
   }, [])
 
   useEffect(() => { loadShoppingIds() }, [loadShoppingIds])
+
+  useEffect(() => {
+    supabase.from('instructions').select('equipment_id').not('equipment_id', 'is', null).then(({ data }) => {
+      const counts = new Map<string, number>()
+      for (const row of (data ?? []) as { equipment_id: string }[]) {
+        counts.set(row.equipment_id, (counts.get(row.equipment_id) ?? 0) + 1)
+      }
+      setInstructionCounts(counts)
+    })
+  }, [])
 
   async function handleAddToShoppingList(item: Equipment): Promise<'added' | 'duplicate'> {
     if (openShoppingIds.has(item.id)) return 'duplicate'
@@ -138,6 +149,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
           openShoppingIds={openShoppingIds}
           onEditEquipment={setEditItem}
           onAddToShoppingList={canEdit ? handleAddToShoppingList : undefined}
+          instructionCounts={instructionCounts}
         />
       )}
 
