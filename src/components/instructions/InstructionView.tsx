@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2 } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Image as ImageIcon, Maximize2, FileDown } from 'lucide-react'
+import { exportInstructionPDF } from '../../lib/instructionPdf'
 import type { Instruction, InstructionStep } from '../../types'
 
 interface Props {
@@ -11,6 +12,13 @@ interface Props {
 export default function InstructionView({ instruction, steps, onClose }: Props) {
   const [currentStep, setCurrentStep] = useState(0)
   const [lightbox, setLightbox] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
+
+  async function handleExportPDF() {
+    setPdfLoading(true)
+    await exportInstructionPDF(instruction, steps)
+    setPdfLoading(false)
+  }
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -42,9 +50,19 @@ export default function InstructionView({ instruction, steps, onClose }: Props) 
               <p className="text-sm text-gray-500 mt-1">{instruction.description}</p>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors shrink-0">
-            <X size={20} className="text-gray-500" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={handleExportPDF}
+              disabled={pdfLoading}
+              title="Als PDF exportieren"
+              className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-40"
+            >
+              <FileDown size={18} className="text-gray-500" />
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+              <X size={20} className="text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
