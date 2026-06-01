@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Check, X, FileDown, MessageCircle, Clock, GripVertical, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, Check, X, FileDown, MessageCircle, Clock, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
 
 const MEMBER_COLORS = [
   'bg-amber-100 text-amber-800',
@@ -30,7 +30,6 @@ interface Props {
   onAdd: (role: string, member_ids: string[], time_start?: string, time_end?: string) => Promise<void>
   onUpdate: (id: string, changes: Partial<Pick<TournamentHelper, 'role' | 'member_id' | 'time_start' | 'time_end'>>) => Promise<void>
   onDelete: (id: string) => Promise<void>
-  onReorder: (orderedIds: string[]) => Promise<void>
   onToggleAvailability: (memberId: string) => Promise<void>
   onAddMember: (name: string) => Promise<void>
 }
@@ -66,7 +65,7 @@ function hasConflict(helper: TournamentHelper, all: TournamentHelper[]): boolean
   )
 }
 
-export default function HelferTab({ tournamentName, helpers, members, availability, isAdmin, onAdd, onUpdate, onDelete, onReorder, onToggleAvailability, onAddMember }: Props) {
+export default function HelferTab({ tournamentName, helpers, members, availability, isAdmin, onAdd, onUpdate, onDelete, onToggleAvailability, onAddMember }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [poolOpen, setPoolOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -76,7 +75,6 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
   const [formTimeEnd, setFormTimeEnd] = useState('')
   const [saving, setSaving] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-  const [draggedId, setDraggedId] = useState<string | null>(null)
   const [showAddMemberForm, setShowAddMemberForm] = useState(false)
   const [newMemberName, setNewMemberName] = useState('')
   const [addMemberError, setAddMemberError] = useState('')
@@ -130,28 +128,9 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
     }
   }
 
-  function handleDragStart(e: React.DragEvent, id: string) {
-    setDraggedId(id)
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-  }
-
-  function handleDrop(e: React.DragEvent, targetId: string) {
-    e.preventDefault()
-    if (!draggedId || draggedId === targetId) { setDraggedId(null); return }
-    const ids = helpers.map(h => h.id)
-    const fromIdx = ids.indexOf(draggedId)
-    const toIdx = ids.indexOf(targetId)
-    const reordered = [...ids]
-    reordered.splice(fromIdx, 1)
-    reordered.splice(toIdx, 0, draggedId)
-    setDraggedId(null)
-    onReorder(reordered)
-  }
+  const sortedHelpers = helpers.slice().sort((a, b) =>
+    (a.role ?? '').localeCompare(b.role ?? '', 'de', { sensitivity: 'base' })
+  )
 
   function shareWhatsApp() {
     const byPerson: Record<string, { name: string; entries: string[] }> = {}
@@ -227,22 +206,15 @@ export default function HelferTab({ tournamentName, helpers, members, availabili
 
       {/* Helper cards */}
       <div className="space-y-2">
-        {helpers.map(helper => {
+        {sortedHelpers.map(helper => {
           const conflict = hasConflict(helper, helpers)
           const memberName = helper.member?.name
           const colorCls = helper.member_id ? memberColor(helper.member_id) : 'bg-gray-100 text-gray-400'
           return (
             <div
               key={helper.id}
-              draggable={isAdmin}
-              onDragStart={e => handleDragStart(e, helper.id)}
-              onDragOver={handleDragOver}
-              onDrop={e => handleDrop(e, helper.id)}
-              className={`bg-white rounded-xl shadow-sm px-4 py-3 flex items-center gap-3 ${draggedId === helper.id ? 'opacity-40' : ''}`}
+              className="bg-white rounded-xl shadow-sm px-4 py-3 flex items-center gap-3"
             >
-              {isAdmin && (
-                <GripVertical size={16} className="text-gray-300 shrink-0 cursor-grab" />
-              )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className="text-sm font-semibold text-gray-900">{helper.role ?? '—'}</p>

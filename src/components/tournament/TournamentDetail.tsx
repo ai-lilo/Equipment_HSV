@@ -37,7 +37,7 @@ export default function TournamentDetail({
   tournament, currentUser, templates, onBack, onArchive, onUnarchive, onDelete, onCreateTemplate, onReplaceTemplate, onUpdateTournament, onNavigateEquipment
 }: Props) {
   const isAdmin = currentUser.role === 'ADMIN'
-  const { categories, tasks, helpers, availability, note, bestPractices, loading, addCategory, addChecklistCategory, renameCategory, deleteCategory, reorderCategories, addTask, updateTask, deleteTask, addHelpers, updateHelper, deleteHelper, reorderHelpers, saveNote, toggleAvailability } = useTournamentDetail(tournament.id)
+  const { categories, tasks, helpers, availability, note, bestPractices, loading, addCategory, addChecklistCategory, renameCategory, deleteCategory, reorderCategories, addTask, updateTask, deleteTask, addHelpers, updateHelper, deleteHelper, saveNote, toggleAvailability } = useTournamentDetail(tournament.id)
   const users = useAllUsers()
   const { members, addMember } = useClubMembers()
   const [allEquipment, setAllEquipment] = useState<Equipment[]>([])
@@ -329,7 +329,6 @@ export default function TournamentDetail({
             onAdd={addHelpers}
             onUpdate={updateHelper}
             onDelete={deleteHelper}
-            onReorder={reorderHelpers}
             onToggleAvailability={toggleAvailability}
             onAddMember={addMember}
           />
