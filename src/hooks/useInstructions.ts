@@ -37,15 +37,15 @@ export function useInstructions() {
     return (data ?? []) as InstructionStep[]
   }
 
-  async function uploadMedia(instructionId: string, stepIndex: number, file: File): Promise<string | null> {
+  async function uploadMedia(instructionId: string, stepIndex: number, file: File): Promise<{ url: string | null; error: string | null }> {
     const ext = file.name.split('.').pop() ?? 'bin'
     const path = `${instructionId}/${stepIndex}.${ext}`
     const { error } = await supabase.storage
       .from('instruction-media')
       .upload(path, file, { upsert: true })
-    if (error) return null
+    if (error) return { url: null, error: error.message }
     const { data } = supabase.storage.from('instruction-media').getPublicUrl(path)
-    return data.publicUrl
+    return { url: data.publicUrl, error: null }
   }
 
   async function saveInstruction(
@@ -100,11 +100,10 @@ export function useInstructions() {
       let mediaType = step.media_type
 
       if (step.file) {
-        const uploaded = await uploadMedia(instructionId, i, step.file)
-        if (uploaded) {
-          mediaUrl = uploaded
-          mediaType = step.file.type.startsWith('video/') ? 'video' : 'image'
-        }
+        const { url, error: uploadError } = await uploadMedia(instructionId, i, step.file)
+        if (uploadError) return { error: `Schritt ${i + 1}: Foto-Upload fehlgeschlagen – ${uploadError}` }
+        mediaUrl = url
+        mediaType = step.file.type.startsWith('video/') ? 'video' : 'image'
       }
 
       await supabase.from('instruction_steps').insert({
