@@ -73,7 +73,14 @@ export default function App() {
   }, [])
 
   if (loading && !user) {
-    return <div className="min-h-screen bg-navy-700" />
+    return (
+      <div className="min-h-screen bg-navy-700 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <img src="/Equipment_HSV/logo.png" alt="" className="w-16 h-16 rounded-xl opacity-90" />
+          <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        </div>
+      </div>
+    )
   }
 
   if (!user) {

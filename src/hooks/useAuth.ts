@@ -10,9 +10,9 @@ export function useAuth() {
   const [otpEmail, setOtpEmail] = useState<string | null>(null)
 
   useEffect(() => {
-    getSessionUser()
+    const timeout = new Promise<User | null>(resolve => setTimeout(() => resolve(null), 8000))
+    Promise.race([getSessionUser().catch(() => null), timeout])
       .then(u => setUser(u))
-      .catch(() => {})
       .finally(() => setLoading(false))
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
