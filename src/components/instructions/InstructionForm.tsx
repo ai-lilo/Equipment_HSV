@@ -3,6 +3,7 @@ import { X, Plus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon, Video } fr
 import { toast } from 'sonner'
 import type { Instruction, InstructionStep, Equipment } from '../../types'
 import type { StepDraft } from '../../hooks/useInstructions'
+import ConfirmDialog from '../ui/ConfirmDialog'
 
 interface Props {
   instruction: Instruction | null
@@ -41,6 +42,7 @@ export default function InstructionForm({ instruction, existingSteps, equipment,
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null)
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
@@ -210,7 +212,15 @@ export default function InstructionForm({ instruction, existingSteps, equipment,
                         <ChevronDown size={14} className="text-gray-500" />
                       </button>
                       <button
-                        onClick={() => removeStep(index)}
+                        onClick={() => {
+                          const s = steps[index]
+                          const hasContent = s.description.trim() !== '' || s.preview != null
+                          if (hasContent) {
+                            setConfirmDeleteIndex(index)
+                          } else {
+                            removeStep(index)
+                          }
+                        }}
                         disabled={steps.length === 1}
                         className="p-1 rounded hover:bg-red-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                         title="Schritt löschen"
@@ -289,6 +299,19 @@ export default function InstructionForm({ instruction, existingSteps, equipment,
           </button>
         </div>
       </div>
+
+      {confirmDeleteIndex !== null && (
+        <ConfirmDialog
+          title="Schritt löschen?"
+          message="Dieser Schritt enthält Inhalt. Wirklich löschen?"
+          confirmLabel="Löschen"
+          onConfirm={() => {
+            removeStep(confirmDeleteIndex)
+            setConfirmDeleteIndex(null)
+          }}
+          onCancel={() => setConfirmDeleteIndex(null)}
+        />
+      )}
     </div>
   )
 }
