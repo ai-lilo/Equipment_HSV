@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Toaster } from 'sonner'
+import { supabase } from './lib/supabase'
 import { useAuth } from './hooks/useAuth'
 import Header from './components/layout/Header'
 import Login from './pages/Login'
@@ -30,13 +31,25 @@ export default function App() {
 
   useEffect(() => {
     const THRESHOLD = 5_000
+    let reloading = false
+
+    async function reloadWithRefresh() {
+      if (reloading) return
+      reloading = true
+      try {
+        await supabase.auth.refreshSession()
+      } catch {
+        // Session refresh failed — reload will show login if needed
+      }
+      window.location.reload()
+    }
 
     // Heartbeat: detect process suspension (most reliable on iOS)
     let lastTick = Date.now()
     const heartbeat = setInterval(() => {
       const now = Date.now()
       if (now - lastTick > THRESHOLD) {
-        window.location.reload()
+        reloadWithRefresh()
         return
       }
       lastTick = now
@@ -49,7 +62,7 @@ export default function App() {
         hiddenAt = Date.now()
       } else if (document.visibilityState === 'visible' && hiddenAt !== null) {
         if (Date.now() - hiddenAt > THRESHOLD) {
-          window.location.reload()
+          reloadWithRefresh()
           return
         }
         hiddenAt = null
@@ -59,7 +72,7 @@ export default function App() {
     // pageshow with persisted=true: BFCache restore on iOS
     function onPageShow(e: PageTransitionEvent) {
       if (e.persisted) {
-        window.location.reload()
+        reloadWithRefresh()
       }
     }
 
