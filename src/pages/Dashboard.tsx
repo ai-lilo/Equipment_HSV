@@ -17,7 +17,7 @@ interface Props {
 
 export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: initCabinet }: Props) {
   const { rooms, cabinets, equipment, loading, reload } = useInventory()
-  const { categories } = useCategories()
+  const { categories, reload: reloadCategories } = useCategories()
   const [search, setSearch] = useState('')
   const [filterRoom, setFilterRoom] = useState(initRoom ?? '')
   const [filterCategory, setFilterCategory] = useState('')
@@ -46,6 +46,18 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
       setInstructionCounts(counts)
     })
   }, [])
+
+  useEffect(() => {
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') {
+        reload()
+        reloadCategories()
+        loadShoppingIds()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [reload, reloadCategories, loadShoppingIds])
 
   async function handleAddToShoppingList(item: Equipment): Promise<'added' | 'duplicate'> {
     if (openShoppingIds.has(item.id)) return 'duplicate'
@@ -158,6 +170,7 @@ export default function Dashboard({ user, filterRoom: initRoom, filterCabinet: i
           item={editItem === 'new' ? null : editItem}
           rooms={rooms}
           cabinets={cabinets}
+          categories={categories}
           user={user}
           onClose={() => setEditItem(null)}
           onSaved={() => { setEditItem(null); reload() }}

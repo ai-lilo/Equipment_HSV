@@ -2,20 +2,20 @@ import { useState, useRef } from 'react'
 import { X, Camera, Image as ImageIcon, Check } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { sendDefectNotification, sendRepairedNotification } from '../../lib/push'
-import { useCategories } from '../../hooks/useCategories'
-import type { Equipment, Room, Cabinet, User, EquipmentStatus } from '../../types'
+import type { Equipment, Room, Cabinet, User, EquipmentStatus, Category } from '../../types'
 
 interface Props {
   item: Equipment | null
   rooms: Room[]
   cabinets: Cabinet[]
+  categories: Category[]
   user: User
   initCabinetId?: string
   onClose: () => void
   onSaved: () => void
 }
 
-export default function EquipmentForm({ item, rooms, cabinets, user, initCabinetId, onClose, onSaved }: Props) {
+export default function EquipmentForm({ item, rooms, cabinets, categories, user, initCabinetId, onClose, onSaved }: Props) {
   const isNew = item === null
 
   const [name, setName] = useState(item?.name ?? '')
@@ -24,7 +24,6 @@ export default function EquipmentForm({ item, rooms, cabinets, user, initCabinet
   const [cabinetId, setCabinetId] = useState(item?.cabinet_id ?? initCabinetId ?? '')
   const [categoryId, setCategoryId] = useState<string>(item?.category_id ?? '')
   const [isConsumable, setIsConsumable] = useState(item?.is_consumable ?? false)
-  const { categories } = useCategories()
   const [description, setDescription] = useState(item?.description ?? '')
   const [status, setStatus] = useState<EquipmentStatus>(item?.status ?? 'OK')
   const [defectNote, setDefectNote] = useState(item?.defect_note ?? '')
