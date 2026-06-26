@@ -1,6 +1,34 @@
 import jsPDF from 'jspdf'
 import type { Room, Cabinet, Equipment, Category } from '../types'
 
+const PAGE_BOTTOM = 278
+const CONTENT_START_Y = 32
+
+function drawPageHeader(doc: jsPDF, now: string) {
+  const pageW = doc.internal.pageSize.getWidth()
+  const margin = 14
+  doc.setFillColor(30, 64, 175)
+  doc.rect(0, 0, pageW, 22, 'F')
+  doc.setFontSize(14)
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.text('HSV Pegnitz – Inventarliste', margin, 14)
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Stand: ${now}`, pageW - margin, 14, { align: 'right' })
+}
+
+function drawTableHeader(doc: jsPDF, x: number, y: number, width: number, colName: number, colAnzahl: number) {
+  doc.setFillColor(219, 234, 254)
+  doc.rect(x, y, width, 6, 'F')
+  doc.setFontSize(8)
+  doc.setTextColor(30, 64, 175)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Name', x + 2, y + 4.2)
+  doc.text('Anzahl', x + colName + 2, y + 4.2)
+  doc.text('Kategorie', x + colName + colAnzahl + 2, y + 4.2)
+}
+
 export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment: Equipment[], categories: Category[]) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
@@ -25,20 +53,8 @@ export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment
     if (!isFirst) doc.addPage()
     isFirst = false
 
-    let y = 14
-
-    // Header
-    doc.setFillColor(30, 64, 175) // blue-800
-    doc.rect(0, 0, pageW, 22, 'F')
-    doc.setFontSize(14)
-    doc.setTextColor(255, 255, 255)
-    doc.setFont('helvetica', 'bold')
-    doc.text('HSV Pegnitz – Inventarliste', margin, 14)
-    doc.setFontSize(9)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Stand: ${now}`, pageW - margin, 14, { align: 'right' })
-
-    y = 32
+    drawPageHeader(doc, now)
+    let y = CONTENT_START_Y
 
     // Room title
     doc.setFontSize(13)
@@ -55,7 +71,7 @@ export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment
     // Direct equipment (no cabinet)
     const directItems = roomEquipment.filter(e => !e.cabinet_id)
     if (directItems.length > 0) {
-      y = renderTable(doc, directItems, null, margin, y, contentW, categories)
+      y = renderTable(doc, directItems, margin, y, contentW, categories, now)
       y += 4
     }
 
@@ -65,22 +81,31 @@ export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment
       const cabItems = roomEquipment.filter(e => e.cabinet_id === cabinet.id)
       if (cabItems.length === 0) continue
 
+      if (y + 12 > PAGE_BOTTOM) {
+        doc.addPage()
+        drawPageHeader(doc, now)
+        y = CONTENT_START_Y
+      }
+
       doc.setFontSize(10)
       doc.setTextColor(80, 80, 80)
       doc.setFont('helvetica', 'bold')
       doc.text(`Schrank: ${cabinet.name}`, margin + 2, y)
       y += 5
 
-      y = renderTable(doc, cabItems, cabinet.name, margin + 2, y, contentW - 2, categories)
+      y = renderTable(doc, cabItems, margin + 2, y, contentW - 2, categories, now)
       y += 4
     }
+  }
 
-    // Footer
-    const pageCount = (doc.internal as { getNumberOfPages(): number }).getNumberOfPages()
+  // Footers on all pages
+  const totalPages = (doc.internal as { getNumberOfPages(): number }).getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
     doc.setFontSize(8)
     doc.setTextColor(160, 160, 160)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Seite ${pageCount}`, pageW / 2, 290, { align: 'center' })
+    doc.text(`Seite ${i} von ${totalPages}`, pageW / 2, 290, { align: 'center' })
   }
 
   doc.save(`Inventarliste_HSV_${now.replace(/\./g, '-')}.pdf`)
@@ -89,31 +114,30 @@ export function exportInventoryPDF(rooms: Room[], cabinets: Cabinet[], equipment
 function renderTable(
   doc: jsPDF,
   items: Equipment[],
-  _context: string | null,
   x: number,
   y: number,
   width: number,
   categories: Category[],
+  now: string,
 ): number {
   const colAnzahl = 20
   const colSport = 42
   const colName = width - colAnzahl - colSport
-
   const headerH = 6
   const rowH = 7
 
-  // Table header
-  doc.setFillColor(219, 234, 254) // blue-100
-  doc.rect(x, y, width, headerH, 'F')
-  doc.setFontSize(8)
-  doc.setTextColor(30, 64, 175)
-  doc.setFont('helvetica', 'bold')
-  doc.text('Name', x + 2, y + 4.2)
-  doc.text('Anzahl', x + colName + 2, y + 4.2)
-  doc.text('Kategorie', x + colName + colAnzahl + 2, y + 4.2)
+  drawTableHeader(doc, x, y, width, colName, colAnzahl)
   y += headerH
 
   for (const item of items) {
+    if (y + rowH > PAGE_BOTTOM) {
+      doc.addPage()
+      drawPageHeader(doc, now)
+      y = CONTENT_START_Y
+      drawTableHeader(doc, x, y, width, colName, colAnzahl)
+      y += headerH
+    }
+
     doc.setFillColor(255, 255, 255)
     doc.rect(x, y, width, rowH, 'F')
 
@@ -132,7 +156,6 @@ function renderTable(
       doc.text(catName, x + colName + colAnzahl + 2, y + 4.8)
     }
 
-    // Row separator
     doc.setDrawColor(220, 220, 220)
     doc.setLineWidth(0.2)
     doc.line(x, y + rowH, x + width, y + rowH)
